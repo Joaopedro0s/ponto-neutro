@@ -1,0 +1,211 @@
+// Modelo de dados do sistema de gestão para estéticas e oficinas automotivas.
+// Identificadores em inglês no código; rótulos em português ficam na interface.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Acesso ----------
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id // token aleatório guardado em cookie httpOnly
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------- Equipe e catálogo ----------
+
+enum Specialty {
+  MECHANIC     // mecânico
+  BODYWORK     // funileiro
+  DETAILING    // esteticista
+  RECEPTION    // recepcionista
+}
+
+model Professional {
+  id           String        @id @default(cuid())
+  name         String
+  specialty    Specialty
+  phone        String?
+  active       Boolean       @default(true)
+  appointments Appointment[]
+  workOrders   WorkOrder[]
+}
+
+enum ServiceCategory {
+  DETAILING  // estética
+  MECHANICS  // mecânica
+  BODYWORK   // funilaria
+}
+
+model Service {
+  id              String          @id @default(cuid())
+  name            String          @unique
+  description     String?
+  category        ServiceCategory
+  price           Decimal         @db.Decimal(10, 2)
+  durationMinutes Int
+  active          Boolean         @default(true)
+  appointments    Appointment[]
+  quoteItems      QuoteItem[]
+}
+
+// ---------- Clientes e veículos ----------
+
+model Customer {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String
+  email        String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  vehicles     Vehicle[]
+  appointments Appointment[]
+  quotes       Quote[]
+
+  @@index([name])
+}
+
+model Vehicle {
+  id           String        @id @default(cuid())
+  plate        String        @unique // placa Mercosul normalizada: ABC1D23
+  model        String        // descrição genérica, sem marcas reais
+  color        String?
+  year         Int?
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdAt    DateTime      @default(now())
+  appointments Appointment[]
+  quotes       Quote[]
+  workOrders   WorkOrder[]
+
+  @@index([customerId])
+}
+
+// ---------- Agenda ----------
+
+enum AppointmentStatus {
+  SCHEDULED  // agendado
+  CONFIRMED  // confirmado
+  COMPLETED  // concluído
+  CANCELED   // cancelado
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  customerId     String
+  customer       Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  vehicleId      String
+  vehicle        Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  serviceId      String
+  service        Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  professionalId String
+  professional   Professional      @relation(fields: [professionalId], references: [id], onDelete: Restrict)
+  startsAt       DateTime
+  endsAt         DateTime
+  status         AppointmentStatus @default(SCHEDULED)
+  notes          String?
+  createdAt      DateTime          @default(now())
+
+  @@index([professionalId, startsAt])
+  @@index([startsAt])
+}
+
+// ---------- Orçamentos ----------
+
+enum QuoteStatus {
+  DRAFT     // rascunho
+  SENT      // enviado
+  APPROVED  // aprovado
+  REJECTED  // recusado
+}
+
+enum QuoteItemKind {
+  PART   // peça
+  LABOR  // mão de obra
+}
+
+model Quote {
+  id         String      @id @default(cuid())
+  number     Int         @unique @default(autoincrement()) // exibido como ORC-0001
+  customerId String
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  vehicleId  String
+  vehicle    Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  status     QuoteStatus @default(DRAFT)
+  discount   Decimal     @default(0) @db.Decimal(10, 2) // desconto em R$
+  // subtotal e total são derivados dos itens; gravados para relatórios rápidos
+  subtotal   Decimal     @default(0) @db.Decimal(10, 2)
+  total      Decimal     @default(0) @db.Decimal(10, 2)
+  notes      String?
+  validUntil DateTime?
+  createdAt  DateTime    @default(now())
+  sentAt     DateTime?
+  decidedAt  DateTime?   // data de aprovação ou recusa
+  items      QuoteItem[]
+  workOrder  WorkOrder?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuoteItem {
+  id          String        @id @default(cuid())
+  quoteId     String
+  quote       Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  kind        QuoteItemKind
+  description String
+  quantity    Decimal       @db.Decimal(10, 2)
+  unitPrice   Decimal       @db.Decimal(10, 2)
+  serviceId   String? // preenchido quando o item vem do catálogo
+  service     Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  position    Int           @default(0)
+
+  @@index([quoteId])
+}
+
+// ---------- Ordens de serviço ----------
+
+enum WorkOrderStatus {
+  WAITING      // aguardando
+  IN_PROGRESS  // em serviço
+  READY        // pronto para retirada
+  DELIVERED    // entregue
+}
+
+model WorkOrder {
+  id             String          @id @default(cuid())
+  number         Int             @unique @default(autoincrement()) // exibido como OS-0001
+  quoteId        String          @unique // gerada ao aprovar o orçamento
+  quote          Quote           @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  vehicleId      String
+  vehicle        Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  professionalId String?
+  professional   Professional?   @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  status         WorkOrderStatus @default(WAITING)
+  createdAt      DateTime        @default(now())
+  startedAt      DateTime?
+  readyAt        DateTime?
+  deliveredAt    DateTime?
+
+  @@index([status])
+  @@index([deliveredAt])
+}
