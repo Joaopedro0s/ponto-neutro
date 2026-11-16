@@ -184,14 +184,25 @@ As datas do seed são relativas ao dia em que ele roda. Rodar `npm run db:seed` 
 
 ### Deploy na Vercel
 
-1. Crie um banco PostgreSQL gratuito no [Neon](https://neon.tech) ou no [Supabase](https://supabase.com) e copie a URL de conexão.
-2. Na Vercel, importe o repositório e cadastre `DATABASE_URL` nas variáveis de ambiente. Não use `SHADOW_DATABASE_URL` nem `DATABASE_POOL_MAX` em produção.
-3. Publique. O script `vercel-build` aplica as migrações (`prisma migrate deploy`) antes de gerar o site.
-4. Popule o banco de produção uma vez, do seu computador:
-   ```bash
-   DATABASE_URL="url-do-banco-de-producao" npm run db:seed
-   ```
-5. Coloque o link no topo deste README e marque o [quadro de pendências](#quadro-de-pendências).
+1. Crie um banco PostgreSQL gratuito no [Neon](https://neon.tech) ou no [Supabase](https://supabase.com). Pela integração da Vercel com o Neon, `DATABASE_URL` (com pooler) e `DATABASE_URL_UNPOOLED` (conexão direta) já são criadas.
+2. Na Vercel, importe o repositório e confira essas variáveis em Production e Preview. No Supabase, use `DATABASE_URL` e `DIRECT_URL`. Não use `SHADOW_DATABASE_URL` nem `DATABASE_POOL_MAX` em produção.
+3. Publique. O script `vercel-build` faz, nesta ordem:
+   - `prisma migrate deploy`: aplica as migrações;
+   - `tsx prisma/seed-if-empty.ts`: popula a demonstração **só se o banco estiver vazio**;
+   - `next build`: gera o site.
+
+   Migrações e seed usam a conexão direta (`DIRECT_URL` ou `DATABASE_URL_UNPOOLED`) quando ela existe; o app usa `DATABASE_URL`.
+4. Coloque o link no topo deste README e marque o [quadro de pendências](#quadro-de-pendências).
+
+**Seed automático, só em banco vazio.** O `seed-if-empty` confere usuários, profissionais, serviços, clientes, agendamentos e orçamentos. Se qualquer uma dessas tabelas tiver registros, imprime `Seed ignorado: banco já tem dados` e não altera nada. Por isso os deploys seguintes nunca apagam o que foi criado na demonstração. Se der erro, o build falha (código de saída diferente de 0).
+
+**Resetar os dados de demonstração.** O `npm run db:seed` é destrutivo: apaga todas as tabelas (`TRUNCATE`) e recria a demonstração com datas dos últimos 3 meses a partir de hoje. Para rodar no banco de produção, a partir do seu computador:
+
+```bash
+DATABASE_URL="url-direta-do-banco-de-producao" npm run db:seed
+```
+
+Use a URL direta (o valor de `DATABASE_URL_UNPOOLED` ou `DIRECT_URL`). Não há reset automático: os dados só mudam quando alguém roda esse comando ou usa o sistema.
 
 ### Qualidade
 

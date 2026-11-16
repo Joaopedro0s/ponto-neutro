@@ -1,6 +1,6 @@
 /**
  * Popula (ou reseta) o banco com a demonstração fictícia da "Ponto Neutro".
- * Rode com `npm run db:seed`. As datas são relativas ao dia em que o seed roda,
+ * Apaga todos os dados antes (TRUNCATE). Rode com `npm run db:seed`. As datas são relativas ao dia em que o seed roda,
  * então o painel sempre mostra os últimos 3 meses e os próximos dias.
  */
 import "dotenv/config";
@@ -246,7 +246,8 @@ const slug = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]+/g, ".");
 const phone = () => `(00) 9${int(1000, 9999)}-${int(1000, 9999)}`;
 
-async function main() {
+/** Apaga tudo e popula a demonstração. Destrutivo: no deploy, use prisma/seed-if-empty.ts. */
+export async function seed() {
   console.log(`Seed da demonstração (hoje: ${today.split("-").reverse().join("/")})`);
 
   await db.$executeRawUnsafe(
@@ -580,9 +581,12 @@ async function main() {
   console.log(`Pronto. Entre com ${DEMO_ACCOUNT.email} / ${DEMO_ACCOUNT.password} ou pelo botão de demonstração.`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => db.$disconnect());
+// Rodado direto (`npm run db:seed`): reseta e popula. Importado por seed-if-empty.ts: só exporta.
+if (require.main === module) {
+  seed()
+    .catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    })
+    .finally(() => db.$disconnect());
+}

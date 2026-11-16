@@ -10,7 +10,12 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrações usam a conexão direta (sem pooler) quando ela existe:
+    // DIRECT_URL (Supabase) ou DATABASE_URL_UNPOOLED (Neon na Vercel).
+    url:
+      process.env["DIRECT_URL"] ??
+      process.env["DATABASE_URL_UNPOOLED"] ??
+      process.env["DATABASE_URL"],
     shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"],
   },
 });
