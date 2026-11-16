@@ -7,7 +7,9 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 function createClient() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL não definida. Veja .env.example.");
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  // O PostgreSQL local do `prisma dev` (PGlite) aceita uma conexão por vez; em produção o pool usa o padrão.
+  const max = Number(process.env.DATABASE_POOL_MAX) || undefined;
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString, max }) });
 }
 
 export const db = globalForPrisma.prisma ?? createClient();

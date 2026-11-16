@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarX } from "lucide-react";
-import { DeleteButton } from "@/components/delete-button";
+import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
@@ -68,7 +68,7 @@ export default async function AppointmentPage({ params }: PageProps<"/agenda/[id
           <p className="mt-1 mb-3 text-sm text-muted-foreground">
             O horário fica livre na agenda e o registro continua no histórico do veículo.
           </p>
-          <DeleteButton
+          <ActionButton
             action={cancelAppointment.bind(null, id)}
             label="Cancelar agendamento"
             icon={<CalendarX aria-hidden="true" />}

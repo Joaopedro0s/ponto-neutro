@@ -41,3 +41,15 @@ export const formatLongDay = (d: Date) => longDayFmt.format(d);
 /** 45 → "45 min"; 90 → "1h30"; 120 → "2h" */
 export const formatDuration = (min: number) =>
   min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${min % 60 ? String(min % 60).padStart(2, "0") : ""}`;
+
+/** Valor digitado em reais ("1.490,50", "54.90", "R$ 10") → centavos; null se inválido. */
+export function parseMoney(input: string) {
+  let s = input.replace(/R\$|\s/g, "");
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  else if (!/^\d+(\.\d{1,2})?$/.test(s)) s = s.replace(/\./g, "");
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  return Math.round(Number(s) * 100);
+}
+
+/** Centavos → texto para campo de valor: 5490 → "54,90". */
+export const centsToInput = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");

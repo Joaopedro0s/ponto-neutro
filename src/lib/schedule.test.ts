@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { atSp, businessHoursError, isValidDay, openDaysOfWeek, overlaps, spDay, spTime } from "./schedule";
+import { atSp, businessHoursError, isValidDay, monthToDateRanges, openDaysOfWeek, overlaps, spDay, spTime } from "./schedule";
 
 const t = (day: string, time: string) => atSp(day, time);
 
@@ -28,4 +28,14 @@ test("datas e horas no fuso de São Paulo", () => {
   assert.equal(spTime(d), "23:30");
   assert.equal(isValidDay("2026-02-30"), false);
   assert.equal(isValidDay("2026-11-16"), true);
+});
+
+test("mês até agora contra o mesmo trecho do mês anterior", () => {
+  const r = monthToDateRanges(atSp("2026-11-16", "10:30"));
+  assert.equal(r.current.from.toISOString(), atSp("2026-11-01", "00:00").toISOString());
+  assert.equal(r.previous.from.toISOString(), atSp("2026-10-01", "00:00").toISOString());
+  assert.equal(r.previous.to.toISOString(), atSp("2026-10-16", "10:30").toISOString());
+  // 31 de março: fevereiro inteiro; janeiro vira dezembro do ano anterior
+  assert.equal(monthToDateRanges(atSp("2026-03-31", "12:00")).previous.to.toISOString(), atSp("2026-03-01", "00:00").toISOString());
+  assert.equal(monthToDateRanges(atSp("2026-01-10", "12:00")).previous.from.toISOString(), atSp("2025-12-01", "00:00").toISOString());
 });

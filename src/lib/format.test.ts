@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatBRL, formatDate, formatDateTime, formatDuration, normalizePhone, normalizePlate } from "./format";
+import { centsToInput, formatBRL, formatDate, formatDateTime, formatDuration, normalizePhone, normalizePlate, parseMoney } from "./format";
 
 test("normaliza telefones digitados de qualquer jeito", () => {
   assert.equal(normalizePhone("00987654321"), "(00) 98765-4321");
@@ -24,4 +24,15 @@ test("datas e moeda no padrão brasileiro, no fuso de São Paulo", () => {
 
 test("duração legível", () => {
   assert.deepEqual([45, 60, 90, 485].map(formatDuration), ["45 min", "1h", "1h30", "8h05"]);
+});
+
+test("lê valores em reais digitados de vários jeitos", () => {
+  assert.equal(parseMoney("54,90"), 5490);
+  assert.equal(parseMoney("1.490,50"), 149050);
+  assert.equal(parseMoney("54.90"), 5490);
+  assert.equal(parseMoney("1.490"), 149000);
+  assert.equal(parseMoney("R$ 10"), 1000);
+  assert.equal(parseMoney("abc"), null);
+  assert.equal(parseMoney("-5"), null);
+  assert.equal(centsToInput(149050), "1490,50");
 });

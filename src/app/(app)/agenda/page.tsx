@@ -49,8 +49,8 @@ function AppointmentCard({ a, color, pro }: { a: CardData; color: string; pro?: 
         canceled && "opacity-60",
       )}
     >
-      <span className="flex items-start justify-between gap-2">
-        <span className={cn("font-medium tabular-nums", canceled && "line-through")}>
+      <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <span className={cn("font-medium whitespace-nowrap tabular-nums", canceled && "line-through")}>
           {spTime(a.startsAt)}–{spTime(a.endsAt)}
         </span>
         {a.status !== "SCHEDULED" && <StatusBadge {...appointmentStatus[a.status]} className="h-5 px-2" />}

@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-// Novos módulos entram aqui conforme as fases avançam.
 const items = [
   { href: "/", label: "Painel", match: (p: string) => p === "/" },
   { href: "/agenda", label: "Agenda", match: (p: string) => p.startsWith("/agenda") },
+  { href: "/orcamentos", label: "Orçamentos", match: (p: string) => p.startsWith("/orcamentos") },
+  { href: "/ordens", label: "Ordens de serviço", match: (p: string) => p.startsWith("/ordens") },
   { href: "/clientes", label: "Clientes", match: (p: string) => p.startsWith("/clientes") || p.startsWith("/veiculos") },
+  { href: "/servicos", label: "Serviços", match: (p: string) => p.startsWith("/servicos") },
 ];
 
 export function AppNav({ className }: { className?: string }) {

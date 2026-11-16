@@ -8,6 +8,7 @@ import { db } from "../src/lib/db";
 import { businessHours } from "../src/lib/company";
 import { addDays, atSp, spDay, weekday } from "../src/lib/schedule";
 import { DEMO_ACCOUNT } from "../src/lib/demo";
+import { specialtyFor } from "../src/lib/labels";
 import { hashPassword } from "../src/lib/password";
 import { centsToDecimalString, quoteTotals } from "../src/lib/quote-math";
 import type {
@@ -60,11 +61,6 @@ const PROFESSIONALS: { name: string; specialty: Specialty }[] = [
   { name: "Patrícia Okumura", specialty: "RECEPTION" },
 ];
 
-const SPECIALTY_FOR: Record<ServiceCategory, Specialty> = {
-  DETAILING: "DETAILING",
-  MECHANICS: "MECHANIC",
-  BODYWORK: "BODYWORK",
-};
 
 type Part = { description: string; priceCents: number; quantity: number; optional?: boolean };
 type ServiceSeed = {
@@ -238,6 +234,14 @@ const NOTES = [
   null, null, null, null,
 ];
 
+// Observações voltadas ao cliente: aparecem no PDF do orçamento.
+const QUOTE_NOTES = [
+  "Garantia de 90 dias para a mão de obra.",
+  "Entrega prevista para o mesmo dia, se aprovado até as 10h.",
+  "Peças originais ou de primeira linha, com nota fiscal.",
+  "Valor da estética considera o porte do veículo.",
+];
+
 const slug = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]+/g, ".");
 const phone = () => `(00) 9${int(1000, 9999)}-${int(1000, 9999)}`;
@@ -331,14 +335,14 @@ async function main() {
 
     // Sazonalidade: movimento cresce rumo ao fim do ano, sextas e sábados são mais cheios
     // e a agenda futura ainda está sendo preenchida.
-    const trend = 0.7 + 0.6 * ((offset + 90) / 90);
+    const trend = 0.85 + 0.3 * ((offset + 90) / 90);
     const dayFactor = [0, 0.8, 1, 1, 1.1, 1.35, 1.2][weekday(day)];
     const fill = offset > 0 ? Math.max(0.25, 1 - offset / 12) : 1;
-    const count = Math.floor(3.6 * trend * dayFactor * fill + rng());
+    const count = Math.floor(3.4 * trend * dayFactor * fill + rng());
 
     for (let i = 0; i < count; i++) {
       const service = weighted(services.map((s) => [s, serviceSeed.get(s.id)!.weight] as const));
-      const eligible = professionals.filter((p) => p.specialty === SPECIALTY_FOR[service.category]);
+      const eligible = professionals.filter((p) => p.specialty === specialtyFor[service.category]);
       // Clientes recorrentes aparecem mais: alguns veículos concentram o histórico.
       const vehicle = vehicles[Math.floor(vehicles.length * rng() ** 1.15)];
 
@@ -451,7 +455,7 @@ async function main() {
       sentAt,
       decidedAt,
       validUntil: new Date(createdAt.getTime() + 15 * 86_400_000),
-      notes: status === "REJECTED" && chance(0.5) ? "Cliente achou o valor acima do orçamento previsto." : null,
+      notes: chance(0.35) ? pick(QUOTE_NOTES) : null,
       items,
       discountCents: chance(0.3) ? Math.floor((subtotal * pick([0.05, 0.1])) / 100) * 100 : 0,
     });
@@ -494,7 +498,7 @@ async function main() {
     const fromEnd = approved.length - 1 - i;
     const status: WorkOrderStatus = fromEnd < inShop.length ? inShop[fromEnd] : "DELIVERED";
     const mainService = services.find((s) => s.id === q.items[0].serviceId)!;
-    const pro = professionals.find((p) => p.specialty === SPECIALTY_FOR[mainService.category])!;
+    const pro = professionals.find((p) => p.specialty === specialtyFor[mainService.category])!;
 
     const startDay = nextOpenDay(addDays(spDay(q.decidedAt!), chance(0.6) ? 0 : 1));
     const startedAt = minDate(at(startDay, 8 * 60 + int(0, 4) * 30), now);

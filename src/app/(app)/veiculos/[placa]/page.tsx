@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, CalendarPlus, FileText, Pencil } from "lucide-react";
+import { CalendarDays, CalendarPlus, FilePlus, FileText, Pencil } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -79,6 +79,10 @@ export default async function VehicleHistoryPage({ params }: PageProps<"/veiculo
           <CalendarPlus aria-hidden="true" />
           Agendar serviço
         </Link>
+        <Link href={`/orcamentos/novo?veiculo=${vehicle.plate}`} className={buttonVariants({ variant: "outline", size: "lg" })}>
+          <FilePlus aria-hidden="true" />
+          Novo orçamento
+        </Link>
         <Link href={`/veiculos/${vehicle.plate}/editar`} className={buttonVariants({ variant: "outline", size: "lg" })}>
           <Pencil aria-hidden="true" />
           Editar veículo
@@ -122,14 +126,20 @@ export default async function VehicleHistoryPage({ params }: PageProps<"/veiculo
                   <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0">
                       <p className="font-medium">
-                        Orçamento {formatQuoteNumber(item.q.number)} · <span className="tabular-nums">{formatBRL(item.q.total)}</span>
+                        <Link href={`/orcamentos/${item.q.id}`} className="underline-offset-4 hover:underline">
+                          Orçamento {formatQuoteNumber(item.q.number)}
+                        </Link>{" "}
+                        · <span className="tabular-nums">{formatBRL(item.q.total)}</span>
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(item.q.createdAt)} · {item.q._count.items} {item.q._count.items === 1 ? "item" : "itens"}
                         {item.q.workOrder && (
                           <>
                             {" "}
-                            · {formatWorkOrderNumber(item.q.workOrder.number)}
+                            ·{" "}
+                            <Link href={`/ordens/${item.q.workOrder.id}`} className="underline-offset-4 hover:underline">
+                              {formatWorkOrderNumber(item.q.workOrder.number)}
+                            </Link>
                             {item.q.workOrder.deliveredAt && <>, entregue em {formatDate(item.q.workOrder.deliveredAt)}</>}
                           </>
                         )}

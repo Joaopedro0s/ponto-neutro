@@ -43,3 +43,23 @@ export function businessHoursError(start: Date, end: Date) {
   }
   return null;
 }
+
+/**
+ * Mês corrente até agora e o mesmo trecho do mês anterior (dia 1 até o mesmo dia e hora),
+ * para comparar faturamento de forma justa no meio do mês.
+ */
+export function monthToDateRanges(now: Date) {
+  const day = spDay(now);
+  const [y, m, d] = day.split("-").map(Number);
+  const prevY = m === 1 ? y - 1 : y;
+  const prevM = m === 1 ? 12 : m - 1;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const prevDays = new Date(Date.UTC(prevY, prevM, 0)).getUTCDate();
+  return {
+    current: { from: atSp(`${y}-${pad(m)}-01`, "00:00"), to: now },
+    previous: {
+      from: atSp(`${prevY}-${pad(prevM)}-01`, "00:00"),
+      to: d > prevDays ? atSp(addDays(`${prevY}-${pad(prevM)}-${pad(prevDays)}`, 1), "00:00") : atSp(`${prevY}-${pad(prevM)}-${pad(d)}`, spTime(now)),
+    },
+  };
+}

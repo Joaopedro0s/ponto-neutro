@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DeleteButton } from "@/components/delete-button";
+import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -27,7 +27,7 @@ export default async function EditCustomerPage({ params }: PageProps<"/clientes/
         <p className="mt-1 mb-3 text-sm text-muted-foreground">
           Só é possível excluir clientes sem agendamentos ou orçamentos. Os veículos dele também serão removidos.
         </p>
-        <DeleteButton
+        <ActionButton
           action={deleteCustomer.bind(null, id)}
           label="Excluir cliente"
           confirmMessage={`Excluir ${customer.name} e seus veículos? Esta ação não pode ser desfeita.`}

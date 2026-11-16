@@ -3,13 +3,14 @@
 import { startTransition, useActionState, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { CustomerVehicleFields, type CustomerOption } from "@/components/customer-vehicle-fields";
 import { FormError, SelectField, TextAreaField, TextField } from "@/components/form-field";
 import { formatDuration } from "@/lib/format";
 import type { FormState } from "@/lib/form";
 import { appointmentStatus } from "@/lib/labels";
 
 export type FormOptions = {
-  customers: { id: string; name: string; vehicles: { id: string; plate: string; model: string }[] }[];
+  customers: CustomerOption[];
   services: { id: string; name: string; durationMinutes: number }[];
   professionals: { id: string; label: string }[];
 };
@@ -44,14 +45,11 @@ export function AppointmentForm({
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   // Campos que mudam outros campos ficam controlados; o resto usa defaultValue.
-  const [customerId, setCustomerId] = useState(defaults.customerId);
-  const [vehicleId, setVehicleId] = useState(defaults.vehicleId);
   const [serviceId, setServiceId] = useState(defaults.serviceId);
   const [time, setTime] = useState(defaults.time);
   const v = (k: keyof Defaults) => state.values?.[k] ?? defaults[k] ?? "";
   const e = state.fieldErrors ?? {};
 
-  const vehicles = options.customers.find((c) => c.id === customerId)?.vehicles ?? [];
   const service = options.services.find((s) => s.id === serviceId);
   const end = service && endTime(time, service.durationMinutes);
 
@@ -67,42 +65,12 @@ export function AppointmentForm({
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <SelectField
-          label="Cliente"
-          name="customerId"
-          required
-          value={customerId}
-          onChange={(ev) => {
-            setCustomerId(ev.target.value);
-            const first = options.customers.find((c) => c.id === ev.target.value)?.vehicles;
-            setVehicleId(first?.length === 1 ? first[0].id : "");
-          }}
-          error={e.customerId}
-        >
-          <option value="">Selecione…</option>
-          {options.customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </SelectField>
-        <SelectField
-          label="Veículo"
-          name="vehicleId"
-          required
-          value={vehicleId}
-          onChange={(ev) => setVehicleId(ev.target.value)}
-          disabled={!customerId}
-          hint={customerId && vehicles.length === 0 ? "Este cliente não tem veículos. Cadastre um na ficha do cliente." : undefined}
-          error={e.vehicleId}
-        >
-          <option value="">{customerId ? "Selecione…" : "Escolha o cliente primeiro"}</option>
-          {vehicles.map((vh) => (
-            <option key={vh.id} value={vh.id}>
-              {vh.plate} · {vh.model}
-            </option>
-          ))}
-        </SelectField>
+        <CustomerVehicleFields
+          customers={options.customers}
+          defaultCustomerId={defaults.customerId}
+          defaultVehicleId={defaults.vehicleId}
+          errors={e}
+        />
 
         <SelectField
           label="Serviço"

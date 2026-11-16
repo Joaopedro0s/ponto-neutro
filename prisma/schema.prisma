@@ -146,6 +146,8 @@ enum QuoteItemKind {
 model Quote {
   id         String      @id @default(cuid())
   number     Int         @unique @default(autoincrement()) // exibido como ORC-0001
+  // Token aleatório do link público do PDF (enviado ao cliente pelo WhatsApp).
+  shareToken String      @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   customerId String
   customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
   vehicleId  String

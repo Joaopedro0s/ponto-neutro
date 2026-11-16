@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DeleteButton } from "@/components/delete-button";
+import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -30,7 +30,7 @@ export default async function EditVehiclePage({ params }: PageProps<"/veiculos/[
         <p className="mt-1 mb-3 text-sm text-muted-foreground">
           Só é possível excluir veículos sem agendamentos, orçamentos ou ordens de serviço.
         </p>
-        <DeleteButton
+        <ActionButton
           action={deleteVehicle.bind(null, vehicle.id)}
           label="Excluir veículo"
           confirmMessage={`Excluir o veículo ${vehicle.plate}? Esta ação não pode ser desfeita.`}

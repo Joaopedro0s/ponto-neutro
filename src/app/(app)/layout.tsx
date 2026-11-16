@@ -18,12 +18,12 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         Pular para o conteúdo
       </a>
       <header className="border-b bg-background">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-6">
             <Link href="/" className="rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
               <Logo />
             </Link>
-            <AppNav className="hidden md:block" />
+            <AppNav className="hidden lg:block" />
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">{user.name}</span>
@@ -35,9 +35,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             </form>
           </div>
         </div>
-        <AppNav className="overflow-x-auto border-t px-3 py-1.5 md:hidden" />
+        <AppNav className="overflow-x-auto border-t px-3 py-1.5 lg:hidden" />
       </header>
-      <main id="conteudo" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">
+      <main id="conteudo" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:py-8">
         {children}
       </main>
     </>
