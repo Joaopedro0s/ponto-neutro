@@ -33,11 +33,14 @@ export type GridBlock = {
 const START = 8 * 60; // 08:00
 const END = 18 * 60; // 18:00
 const HOUR = 64; // px por hora
-const PAD = 12; // folga no topo e na base para os rótulos 08:00 e 18:00
+const PAD = 12; // folga para os rótulos 08:00 e 18:00
+const LANE_MIN = 144; // largura mínima de cada faixa: horário e serviços comuns ("Lavagem técnica") cabem inteiros
+const AXIS = 56;
+const POP_W = 288;
 const px = (min: number) => ((min - START) / 60) * HOUR;
 const HOURS = Array.from({ length: (END - START) / 60 + 1 }, (_, i) => START / 60 + i);
 
-/** Linha da hora atual: calculada no navegador (e atualizada a cada minuto) para não divergir do servidor. */
+/** Linha da hora atual: calculada no navegador (atualizada a cada minuto) para não divergir do servidor. */
 function NowLine({ columns }: { columns: GridColumn[] }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
@@ -62,30 +65,78 @@ function NowLine({ columns }: { columns: GridColumn[] }) {
   );
 }
 
-export function AgendaGrid({ columns, blocks }: { columns: GridColumn[]; blocks: GridBlock[] }) {
-  const [selected, setSelected] = useState<GridBlock | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+/**
+ * Grade de horas. `compact` (semana): o bloco mostra só horário e serviço; os detalhes ficam no popover,
+ * que abre ao clicar ou ao focar o bloco pelo teclado.
+ */
+export function AgendaGrid({ columns, blocks, compact = false }: { columns: GridColumn[]; blocks: GridBlock[]; compact?: boolean }) {
+  const [open, setOpen] = useState<{ block: GridBlock; top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const buttons = useRef(new Map<string, HTMLButtonElement>());
 
+  // Largura mínima de cada coluna: o maior número de faixas lado a lado vezes a largura mínima da faixa.
+  const minCol = columns.map((_, ci) => Math.max(LANE_MIN, ...blocks.filter((b) => b.col === ci).map((b) => b.lanes * LANE_MIN)));
+  const template = `${AXIS}px ${minCol.map((w) => `minmax(${w}px, 1fr)`).join(" ")}`;
+
+  function show(block: GridBlock, el: HTMLElement) {
+    const wrap = wrapRef.current!;
+    const box = wrap.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    // À direita do bloco; se não couber, à esquerda.
+    const right = r.right - box.left + wrap.scrollLeft + 8;
+    const left = right + POP_W > wrap.scrollWidth ? r.left - box.left + wrap.scrollLeft - POP_W - 8 : right;
+    setOpen({ block, top: r.top - box.top, left: Math.max(8, left) });
+  }
+  const close = (returnFocus = false) => {
+    if (returnFocus && open) buttons.current.get(open.block.id)?.focus();
+    setOpen(null);
+  };
+
+  // Esc fecha e devolve o foco ao bloco; clique fora fecha.
   useEffect(() => {
-    if (selected) dialogRef.current?.showModal();
-  }, [selected]);
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        buttons.current.get(open.block.id)?.focus();
+        setOpen(null);
+      }
+    };
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!popRef.current?.contains(t) && !buttons.current.get(open.block.id)?.contains(t)) setOpen(null);
+    };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [open]);
 
   return (
-    <div className="rounded-xl border bg-card">
+    <div
+      ref={wrapRef}
+      className="relative overflow-x-auto overscroll-x-contain rounded-xl border bg-card"
+      onBlur={(e) => {
+        // Fecha quando o foco sai da grade e do popover.
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(null);
+      }}
+    >
       {/* Cabeçalho das colunas */}
-      <div className="sticky top-0 z-30 grid rounded-t-xl border-b bg-card" style={{ gridTemplateColumns: `3.5rem repeat(${columns.length}, minmax(0, 1fr))` }}>
+      <div className="grid border-b" style={{ gridTemplateColumns: template }}>
         <div />
         {columns.map((c) => (
-          <div key={c.key} className={cn("border-l px-3 py-3", c.isToday && "bg-accent-soft")}>
-            <p className={cn("font-display text-lg leading-tight font-semibold tracking-wide uppercase", c.isToday && "text-primary")}>{c.title}</p>
+          <div key={c.key} className={cn("border-l px-3 py-3", c.isToday && "bg-surface-2")}>
+            <p className="font-display text-lg leading-tight font-semibold tracking-wide uppercase">{c.title}</p>
             {c.subtitle && <p className="truncate text-xs text-muted-foreground">{c.subtitle}</p>}
           </div>
         ))}
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: `3.5rem minmax(0, 1fr)` }}>
+      <div className="relative grid" style={{ gridTemplateColumns: template, height: px(END) + PAD * 2 }}>
         {/* Eixo de horas */}
-        <div className="relative" style={{ height: px(END) + PAD * 2 }} aria-hidden="true">
+        <div className="relative" aria-hidden="true">
           {HOURS.map((h) => (
             <span key={h} className="absolute right-2 -translate-y-1/2 font-mono text-xs text-muted-foreground" style={{ top: px(h * 60) + PAD }}>
               {String(h).padStart(2, "0")}:00
@@ -93,137 +144,143 @@ export function AgendaGrid({ columns, blocks }: { columns: GridColumn[]; blocks:
           ))}
         </div>
 
-        <div className="relative" style={{ height: px(END) + PAD * 2 }}>
-          <div className="absolute inset-x-0 grid" style={{ top: PAD, bottom: PAD, gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
-            {columns.map((c, ci) => (
+        {columns.map((c, ci) => (
+          <div
+            key={c.key}
+            className={cn("relative border-l", c.isToday && "bg-surface-2/50")}
+            // Linhas de hora cheia e de meia hora: a régua de horários
+            style={{
+              backgroundImage: `linear-gradient(to bottom, var(--border) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklab, var(--border) 50%, transparent) 1px, transparent 1px)`,
+              backgroundSize: `100% ${HOUR}px, 100% ${HOUR / 2}px`,
+              backgroundPosition: `0 ${PAD}px`,
+            }}
+          >
+            {c.closedFrom !== null && (
               <div
-                key={c.key}
-                className={cn("relative border-l", c.isToday && "bg-accent-soft/40")}
-                // Linhas de hora cheias e de meia hora tracejadas, como uma régua
-                style={{
-                  backgroundImage: `linear-gradient(to bottom, var(--border) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklab, var(--border) 50%, transparent) 1px, transparent 1px)`,
-                  backgroundSize: `100% ${HOUR}px, 100% ${HOUR / 2}px`,
-                }}
+                className="absolute inset-x-0 flex items-start justify-center bg-surface-2 pt-3 text-xs text-muted-foreground"
+                style={{ top: px(c.closedFrom) + PAD, bottom: 0 }}
               >
-                {c.closedFrom !== null && (
-                  <div
-                    className="absolute inset-x-0 bottom-0 flex items-start justify-center pt-3 text-xs text-muted-foreground [background:repeating-linear-gradient(135deg,transparent_0_6px,var(--surface-2)_6px_8px)]"
-                    style={{ top: px(c.closedFrom) }}
-                  >
-                    Fechado
-                  </div>
-                )}
-                {blocks
-                  .filter((b) => b.col === ci)
-                  .map((b) => {
-                    const height = Math.max(px(b.end) - px(b.start) - 2, 26);
-                    const compact = height < 56;
-                    return (
-                      <button
-                        key={b.id}
-                        type="button"
-                        onClick={() => setSelected(b)}
-                        className={cn(
-                          "@container absolute z-10 flex scroll-mt-24 flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left transition-[filter,transform] duration-150 hover:brightness-125 focus-visible:z-30",
-                          b.canceled && "opacity-45",
-                        )}
-                        style={{
-                          top: px(b.start) + 1,
-                          height,
-                          left: `calc(${(b.lane / b.lanes) * 100}% + 3px)`,
-                          width: `calc(${100 / b.lanes}% - 6px)`,
-                          borderLeftColor: b.color,
-                          background: `color-mix(in oklab, ${b.color} 22%, var(--surface))`,
-                        }}
-                      >
-                        {/* Faixa estreita: só o início; o horário completo e as iniciais aparecem quando cabem. */}
-                        <span className={cn("flex w-full items-center justify-between gap-1 font-mono text-xs whitespace-nowrap", b.canceled && "line-through")}>
-                          <span className="hidden @[7.5rem]:inline">{b.timeLabel}</span>
-                          <span className="@[7.5rem]:hidden">{b.timeLabel.slice(0, 5)}</span>
-                          <span className="hidden shrink-0 rounded bg-background/50 px-1 font-sans font-semibold @[5.5rem]:inline" aria-hidden="true">
-                            {b.proInitials}
-                          </span>
-                        </span>
-                        <span className={cn("block truncate text-sm leading-tight font-medium", compact && "text-xs")}>{b.service}</span>
-                        {!compact && <span translate="no" className="plate block truncate text-xs text-muted-foreground">{b.plate}</span>}
-                        <span className="sr-only">
-                          {compact && `, placa ${b.plate}`}, {b.proName}, {b.status.label}
-                        </span>
-                      </button>
-                    );
-                  })}
+                Fechado
               </div>
-            ))}
+            )}
+            {blocks
+              .filter((b) => b.col === ci)
+              .map((b) => {
+                const height = Math.max(px(b.end) - px(b.start) - 2, 26);
+                const tall = !compact && height >= 64;
+                const isOpen = open?.block.id === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    ref={(el) => {
+                      if (el) buttons.current.set(b.id, el);
+                    }}
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={isOpen ? "agenda-popover" : undefined}
+                    onClick={(e) => {
+                      if (!isOpen) return show(b, e.currentTarget);
+                      // Enter/Espaço (detail 0) com o popover aberto: leva o foco para dentro dele; clique do mouse fecha.
+                      if (e.detail === 0) popRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+                      else close();
+                    }}
+                    onFocus={(e) => e.currentTarget.matches(":focus-visible") && show(b, e.currentTarget)}
+                    className={cn(
+                      "absolute z-10 flex scroll-mt-24 flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left transition-[filter] duration-150 hover:brightness-125 focus-visible:z-30",
+                      b.canceled && "opacity-45",
+                      isOpen && "brightness-125",
+                    )}
+                    style={{
+                      top: px(b.start) + PAD + 1,
+                      height,
+                      left: `calc(${(b.lane / b.lanes) * 100}% + 3px)`,
+                      width: `calc(${100 / b.lanes}% - 6px)`,
+                      borderLeftColor: b.color,
+                      background: `color-mix(in oklab, ${b.color} 22%, var(--surface))`,
+                    }}
+                  >
+                    <span className={cn("flex w-full items-center justify-between gap-1 font-mono text-xs whitespace-nowrap", b.canceled && "line-through")}>
+                      <span className="truncate">{b.timeLabel}</span>
+                      {!compact && (
+                        <span className="shrink-0 rounded bg-background/50 px-1 font-sans font-semibold" aria-hidden="true">
+                          {b.proInitials}
+                        </span>
+                      )}
+                    </span>
+                    <span className="block w-full truncate text-sm leading-tight font-medium">{b.service}</span>
+                    {tall && (
+                      <span translate="no" className="plate block truncate text-xs text-muted-foreground">
+                        {b.plate}
+                      </span>
+                    )}
+                    <span className="sr-only">
+                      , {b.proName}, {b.status.label}
+                    </span>
+                  </button>
+                );
+              })}
           </div>
-          <div className="pointer-events-none absolute inset-x-0" style={{ top: PAD, bottom: PAD }}>
-            <NowLine columns={columns} />
-          </div>
+        ))}
+
+        <div className="pointer-events-none absolute right-0" style={{ left: AXIS, top: PAD, bottom: PAD }}>
+          <NowLine columns={columns} />
         </div>
       </div>
 
-      <dialog
-        ref={dialogRef}
-        onClose={() => setSelected(null)}
-        onClick={(e) => e.target === dialogRef.current && dialogRef.current?.close()}
-        aria-labelledby="agendamento-titulo"
-        className="m-auto w-[min(28rem,calc(100vw-2rem))] animate-enter overscroll-contain rounded-2xl border bg-surface-2 p-0 text-foreground backdrop:bg-black/60"
-      >
-        {selected && (
-          <div className="flex flex-col gap-4 p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="eyebrow">{selected.dateLabel}</p>
-                <h2 id="agendamento-titulo" className="mt-1 font-display text-2xl font-semibold tracking-wide uppercase">
-                  {selected.service}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => dialogRef.current?.close()}
-                className={buttonVariants({ variant: "ghost", size: "icon" })}
-                aria-label="Fechar detalhes"
-              >
-                <X aria-hidden="true" />
-              </button>
+      {open && (
+        <div
+          ref={popRef}
+          id="agenda-popover"
+          role="dialog"
+          aria-labelledby="agenda-popover-titulo"
+          className="absolute z-40 flex animate-enter flex-col gap-3 rounded-xl border border-border-strong bg-surface-2 p-4"
+          style={{ top: open.top, left: open.left, width: POP_W }}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="eyebrow">{open.block.dateLabel}</p>
+              <h2 id="agenda-popover-titulo" className="mt-1 font-display text-xl leading-tight font-semibold tracking-wide uppercase">
+                {open.block.service}
+              </h2>
             </div>
-            <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-2 text-sm">
-              <dt className="text-muted-foreground">Horário</dt>
-              <dd className="font-mono">{selected.timeLabel}</dd>
-              <dt className="text-muted-foreground">Cliente</dt>
-              <dd>{selected.customer}</dd>
-              <dt className="text-muted-foreground">Veículo</dt>
-              <dd>
-                <Link href={`/veiculos/${selected.plate}`} className="plate text-primary underline-offset-4 hover:underline">
-                  {selected.plate}
-                </Link>
-              </dd>
-              <dt className="text-muted-foreground">Profissional</dt>
-              <dd className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full" style={{ background: selected.color }} aria-hidden="true" />
-                {selected.proName}
-              </dd>
-              <dt className="text-muted-foreground">Situação</dt>
-              <dd>
-                <StatusBadge {...selected.status} />
-              </dd>
-              {selected.notes && (
-                <>
-                  <dt className="text-muted-foreground">Observações</dt>
-                  <dd>{selected.notes}</dd>
-                </>
-              )}
-            </dl>
-            <div className="flex flex-wrap gap-2">
-              <Link href={`/agenda/${selected.id}`} className={buttonVariants({ size: "lg" })}>
-                Abrir agendamento
-              </Link>
-              <button type="button" onClick={() => dialogRef.current?.close()} className={buttonVariants({ variant: "outline", size: "lg" })}>
-                Fechar
-              </button>
-            </div>
+            <button type="button" onClick={() => close(true)} className={buttonVariants({ variant: "ghost", size: "icon-sm" })} aria-label="Fechar detalhes">
+              <X aria-hidden="true" />
+            </button>
           </div>
-        )}
-      </dialog>
+          <dl className="grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-1.5 text-sm">
+            <dt className="text-muted-foreground">Horário</dt>
+            <dd className="font-mono">{open.block.timeLabel}</dd>
+            <dt className="text-muted-foreground">Cliente</dt>
+            <dd className="truncate" title={open.block.customer}>
+              {open.block.customer}
+            </dd>
+            <dt className="text-muted-foreground">Veículo</dt>
+            <dd>
+              <Link href={`/veiculos/${open.block.plate}`} translate="no" className="plate underline underline-offset-4 hover:text-muted-foreground">
+                {open.block.plate}
+              </Link>
+            </dd>
+            <dt className="text-muted-foreground">Profissional</dt>
+            <dd className="flex items-center gap-2">
+              <span className="size-2.5 shrink-0 rounded-full" style={{ background: open.block.color }} aria-hidden="true" />
+              {open.block.proName}
+            </dd>
+            <dt className="text-muted-foreground">Situação</dt>
+            <dd>
+              <StatusBadge {...open.block.status} />
+            </dd>
+            {open.block.notes && (
+              <>
+                <dt className="text-muted-foreground">Observações</dt>
+                <dd>{open.block.notes}</dd>
+              </>
+            )}
+          </dl>
+          <Link href={`/agenda/${open.block.id}`} className={buttonVariants({ size: "lg", className: "w-full" })}>
+            Abrir agendamento
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

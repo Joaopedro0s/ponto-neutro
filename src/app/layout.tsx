@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: "Agenda, orçamentos e ordens de serviço para estéticas e oficinas automotivas (demonstração com dados fictícios).",
 };
 
-export const viewport: Viewport = { themeColor: "#0e0f11", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#000000", colorScheme: "dark" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

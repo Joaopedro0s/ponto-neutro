@@ -45,19 +45,13 @@ export function RevenueChart({ data }: { data: { label: string; total: number; p
 }
 
 /** Minigráfico do indicador: só a forma da tendência, sem eixos. */
-export function Sparkline({ values, id }: { values: number[]; id: string }) {
+export function Sparkline({ values }: { values: number[] }) {
   const data = values.map((v, i) => ({ i, v }));
   return (
-    <div className="h-10 w-full" aria-hidden="true">
-      <ResponsiveContainer>
+    <div className="h-10 w-full min-w-0" aria-hidden="true">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }} accessibilityLayer={false}>
-          <defs>
-            <linearGradient id={`spark-${id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={ACCENT} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area type="monotone" dataKey="v" stroke={ACCENT} strokeWidth={2} fill={`url(#spark-${id})`} isAnimationActive={false} dot={false} />
+          <Area type="monotone" dataKey="v" stroke={ACCENT} strokeWidth={2} fill="none" isAnimationActive={false} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

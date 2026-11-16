@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { CalendarDays, FileText, Gauge, ListChecks, LogOut, Menu, Users, Wrench, X } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { logout } from "@/app/login/actions";
-import { initials } from "@/lib/professionals";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
@@ -64,9 +63,6 @@ export function Sidebar({ userName }: { userName: string }) {
         </ul>
       </nav>
       <div className="flex items-center gap-3 border-t p-4">
-        <span className="grid size-9 place-items-center rounded-full bg-surface-2 font-display text-sm font-semibold" aria-hidden="true">
-          {initials(userName)}
-        </span>
         <span className="min-w-0 flex-1 truncate text-sm">{userName}</span>
         <LogoutButton className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground" />
       </div>

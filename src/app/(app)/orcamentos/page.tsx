@@ -123,7 +123,7 @@ export default async function QuotesPage({ searchParams }: PageProps<"/orcamento
                   <th scope="col" className={thClass}>Número</th>
                   <th scope="col" className={thClass}>Cliente</th>
                   <th scope="col" className={thClass}>Veículo</th>
-                  <th scope="col" className={thClass}>Data</th>
+                  <th scope="col" className={`${thClass} hidden lg:table-cell`}>Data</th>
                   <th scope="col" className={thClass}>Situação</th>
                   <th scope="col" className={`${thClass} text-right`}>Total</th>
                 </tr>
@@ -132,16 +132,22 @@ export default async function QuotesPage({ searchParams }: PageProps<"/orcamento
                 {quotes.map((x) => (
                   <tr key={x.id} className={trClass}>
                     <td className={tdClass}>
-                      <Link href={`/orcamentos/${x.id}`} className="font-mono font-medium text-primary underline-offset-4 hover:underline">
+                      <Link href={`/orcamentos/${x.id}`} className="font-mono font-medium whitespace-nowrap underline-offset-4 hover:underline">
                         {formatQuoteNumber(x.number)}
                       </Link>
                     </td>
-                    <td className={tdClass}>{x.customer.name}</td>
-                    <td className={tdClass}>
-                      <span className="plate">{x.vehicle.plate}</span>
-                      <span className="block text-xs text-muted-foreground">{x.vehicle.model}</span>
+                    <td className={`${tdClass} max-w-40 lg:max-w-56`}>
+                      <span className="block truncate" title={x.customer.name}>
+                        {x.customer.name}
+                      </span>
                     </td>
-                    <td className={`${tdClass} text-muted-foreground tabular-nums`}>{formatDate(x.createdAt)}</td>
+                    <td className={`${tdClass} max-w-40 lg:max-w-52`}>
+                      <span className="block truncate" title={`${x.vehicle.plate} · ${x.vehicle.model}`}>
+                        <span translate="no" className="plate">{x.vehicle.plate}</span>
+                        <span className="text-muted-foreground"> · {x.vehicle.model}</span>
+                      </span>
+                    </td>
+                    <td className={`${tdClass} hidden whitespace-nowrap text-muted-foreground tabular-nums lg:table-cell`}>{formatDate(x.createdAt)}</td>
                     <td className={tdClass}>
                       <StatusBadge {...quoteStatus[x.status]} />
                     </td>
@@ -157,17 +163,17 @@ export default async function QuotesPage({ searchParams }: PageProps<"/orcamento
               <li key={x.id}>
                 <Link href={`/orcamentos/${x.id}`} className="block rounded-xl border bg-card p-4 transition-colors duration-150 hover:border-input">
                   <span className="flex items-center justify-between gap-3">
-                    <span className="font-mono text-sm font-medium text-primary">{formatQuoteNumber(x.number)}</span>
+                    <span className="font-mono text-sm font-medium whitespace-nowrap">{formatQuoteNumber(x.number)}</span>
                     <StatusBadge {...quoteStatus[x.status]} />
                   </span>
                   <span className="mt-2 flex items-end justify-between gap-3">
                     <span className="min-w-0">
-                      <span className="block truncate">{x.customer.name}</span>
-                      <span className="block text-sm text-muted-foreground">
-                        <span className="plate">{x.vehicle.plate}</span> · {formatDate(x.createdAt)}
+                      <span className="block truncate" title={x.customer.name}>{x.customer.name}</span>
+                      <span className="block truncate text-sm text-muted-foreground">
+                        <span translate="no" className="plate">{x.vehicle.plate}</span> · {formatDate(x.createdAt)}
                       </span>
                     </span>
-                    <span className="font-display text-xl font-semibold tabular-nums">{formatBRL(x.total)}</span>
+                    <span className="shrink-0 font-display text-xl font-semibold whitespace-nowrap tabular-nums">{formatBRL(x.total)}</span>
                   </span>
                 </Link>
               </li>

@@ -21,7 +21,7 @@ export async function loadDashboard(now = new Date()) {
   const firstMonday = addDays(thisMonday, -12 * 7);
   const seriesStart = atSp(firstMonday, "00:00");
 
-  const [monthRows, prevRows, decided30, decidedPrev30, approvedMonth, approvedPrev, weekRows, approvedWeekRows, byStatus, topItems, todayAppointments, lastDays, inShop] =
+  const [monthRows, prevRows, decided30, decidedPrev30, approvedMonth, approvedPrev, weekRows, decidedWeekRows, byStatus, topItems, todayAppointments, lastDays, inShop, shopHistory] =
     await Promise.all([
       db.workOrder.findMany({ where: { deliveredAt: { gte: current.from, lt: current.to } }, select: { quote: { select: { total: true } } } }),
       db.workOrder.findMany({ where: { deliveredAt: { gte: previous.from, lt: previous.to } }, select: { quote: { select: { total: true } } } }),
@@ -30,7 +30,7 @@ export async function loadDashboard(now = new Date()) {
       db.quote.count({ where: { status: "APPROVED", decidedAt: { gte: current.from, lt: current.to } } }),
       db.quote.count({ where: { status: "APPROVED", decidedAt: { gte: previous.from, lt: previous.to } } }),
       db.workOrder.findMany({ where: { deliveredAt: { gte: seriesStart } }, select: { deliveredAt: true, quote: { select: { total: true } } } }),
-      db.quote.findMany({ where: { status: "APPROVED", decidedAt: { gte: seriesStart } }, select: { decidedAt: true } }),
+      db.quote.findMany({ where: { status: { in: ["APPROVED", "REJECTED"] }, decidedAt: { gte: seriesStart } }, select: { decidedAt: true, status: true } }),
       db.quote.groupBy({ by: ["status"], where: { createdAt: { gte: ago(90) } }, _count: true }),
       db.quoteItem.groupBy({
         by: ["serviceId"],
@@ -57,6 +57,11 @@ export async function loadDashboard(now = new Date()) {
           quote: { select: { customer: { select: { name: true } }, items: { where: { kind: "LABOR" }, orderBy: { position: "asc" }, take: 1, select: { description: true } } } },
         },
       }),
+      // Para a série "veículos na oficina" dos últimos 14 dias
+      db.workOrder.findMany({
+        where: { createdAt: { lt: atSp(addDays(today, 1), "00:00") }, OR: [{ deliveredAt: null }, { deliveredAt: { gte: atSp(addDays(today, -13), "00:00") } }] },
+        select: { createdAt: true, deliveredAt: true },
+      }),
     ]);
 
   const services = await db.service.findMany({ where: { id: { in: topItems.map((t) => t.serviceId!) } }, select: { id: true, name: true } });
@@ -71,14 +76,22 @@ export async function loadDashboard(now = new Date()) {
   const weekIndex = (d: Date) => Math.floor((atSp(spDay(d), "12:00").getTime() - atSp(firstMonday, "12:00").getTime()) / (7 * DAY));
   const weeks = Array.from({ length: 13 }, (_, i) => {
     const start = addDays(firstMonday, i * 7);
-    return { start, label: `${start.slice(8, 10)}/${start.slice(5, 7)}`, total: 0, approvals: 0, partial: start === thisMonday };
+    return { start, label: `${start.slice(8, 10)}/${start.slice(5, 7)}`, total: 0, approvals: 0, rejections: 0, partial: start === thisMonday };
   });
   for (const r of weekRows) if (weeks[weekIndex(r.deliveredAt!)]) weeks[weekIndex(r.deliveredAt!)].total += Number(r.quote.total);
-  for (const r of approvedWeekRows) if (weeks[weekIndex(r.decidedAt!)]) weeks[weekIndex(r.decidedAt!)].approvals += 1;
+  for (const r of decidedWeekRows) {
+    const w = weeks[weekIndex(r.decidedAt!)];
+    if (w) w[r.status === "APPROVED" ? "approvals" : "rejections"] += 1;
+  }
 
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13));
   const perDay = days.map((d) => ({ day: d, count: lastDays.filter((a) => spDay(a.startsAt) === d).length }));
   const sameDayLastWeek = perDay[perDay.length - 8].count;
+  // Veículos na oficina ao fim de cada dia: OS abertas até o dia e ainda não entregues.
+  const inShopPerDay = days.map((d) => {
+    const end = atSp(addDays(d, 1), "00:00");
+    return shopHistory.filter((w) => w.createdAt < end && (!w.deliveredAt || w.deliveredAt >= end)).length;
+  });
 
   return {
     today,
@@ -88,6 +101,9 @@ export async function loadDashboard(now = new Date()) {
     appointmentsToday: { current: todayAppointments.length, previous: sameDayLastWeek },
     weeks: weeks.map((w) => ({ ...w, total: Math.round(w.total * 100) / 100 })),
     perDay,
+    inShopPerDay,
+    // Taxa de aprovação por semana (semanas sem decisão ficam com a taxa da anterior, para a linha não despencar)
+    approvalPerWeek: weeks.reduce<number[]>((acc, w) => [...acc, w.approvals + w.rejections ? w.approvals / (w.approvals + w.rejections) : (acc.at(-1) ?? 0)], []),
     quotesByStatus: { DRAFT: countOf(byStatus, "DRAFT"), SENT: countOf(byStatus, "SENT"), APPROVED: countOf(byStatus, "APPROVED"), REJECTED: countOf(byStatus, "REJECTED") },
     topServices: topItems.map((t) => ({ name: services.find((s) => s.id === t.serviceId)?.name ?? "—", count: t._count })),
     todayAppointments,

@@ -37,7 +37,8 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
   const sp = await searchParams;
   const today = spDay(new Date());
   const day = typeof sp.data === "string" && isValidDay(sp.data) ? sp.data : today;
-  const view = sp.visao === "dia" ? "dia" : "semana";
+  // Visão padrão: dia (uma coluna por profissional), a mais legível em telas largas.
+  const view = sp.visao === "semana" ? "semana" : "dia";
   const selectedPros = typeof sp.pro === "string" && sp.pro ? sp.pro.split(",") : [];
 
   const days = view === "semana" ? openDaysOfWeek(day) : [day];
@@ -221,7 +222,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
         <>
           {/* Tablet e desktop: grade de horas */}
           <div className="hidden md:block">
-            <AgendaGrid columns={columns} blocks={blocks} />
+            <AgendaGrid columns={columns} blocks={blocks} compact={view === "semana"} />
           </div>
 
           {/* Celular: lista por horário */}
@@ -230,7 +231,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
               const list = rows.filter((a) => spDay(a.startsAt) === d);
               return (
                 <section key={d} aria-labelledby={`lista-${d}`}>
-                  <h2 id={`lista-${d}`} className={cn("mb-2 font-display text-lg font-semibold tracking-wide uppercase", d === today && "text-primary")}>
+                  <h2 id={`lista-${d}`} className="mb-2 font-display text-lg font-semibold tracking-wide uppercase">
                     {capitalize(formatWeekday(noon(d)))}
                     {d === today && " · hoje"}
                   </h2>

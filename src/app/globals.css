@@ -57,6 +57,8 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-border-strong: var(--border-strong);
 
   --color-pro-1: var(--pro-1);
   --color-pro-2: var(--pro-2);
@@ -91,13 +93,16 @@
   --duration-base: 200ms;
 
   /* Superfícies: profundidade por contraste, não por sombra */
-  --background: #0e0f11; /* fundo grafite */
-  --surface: #15171a; /* nível 1: cartões, barra lateral */
-  --surface-2: #1c1f23; /* nível 2: campos, hover, popover */
-  --foreground: #f2f3f5; /* 17,3:1 no fundo */
-  --muted-foreground: #a6acb5; /* 8,4:1 no fundo · 7,2:1 no nível 2 */
-  --border: #2a2e33; /* divisórias decorativas */
-  --input: #6b727c; /* borda de campos: 3,4:1 no nível 2 (elemento de interface) */
+  --background: #000000; /* fundo */
+  --surface: #0a0a0a; /* nível 1: cartões, barra lateral, tabelas */
+  --surface-2: #151515; /* nível 2: item ativo, hover, popover, campos */
+  --foreground: #ffffff; /* 21:1 no fundo */
+  --muted-foreground: #a8a8a8; /* 8,8:1 no fundo · 7,7:1 no nível 2 */
+  --border: #262626; /* divisórias */
+  --border-strong: #3d3d3d; /* divisória de destaque (cabeçalho de tabela, hover de cartão) */
+  /* Borda de campos e botões "outline": 3,4:1 no nível 2. A #3d3d3d daria 1,7:1,
+     abaixo do mínimo de 3:1 para elementos de interface. */
+  --input: #6b6b6b;
 
   --card: var(--surface);
   --card-foreground: var(--foreground);
@@ -109,22 +114,25 @@
   --accent: var(--surface-2);
   --accent-foreground: var(--foreground);
 
-  /* Acento único: laranja-sinal. Texto escuro sobre ele (6,7:1); branco daria só 2,9:1. */
-  --primary: #ff6a1a; /* 6,3:1 como texto no nível 1 */
-  --primary-foreground: #0e0f11;
-  --accent-soft: color-mix(in oklab, #ff6a1a 14%, var(--surface));
-  --ring: #ff6a1a;
+  /* Acento único (vermelho-laranja). Só em: botão primário, item ativo do menu, anel de foco,
+     série principal dos gráficos e dado de destaque. Texto sobre ele sempre preto (6,1:1);
+     branco daria 3,5:1. */
+  --primary: #ff422a; /* 5,7:1 como dado no nível 1 */
+  --primary-foreground: #000000;
+  --accent-fg: #ff7a66; /* acento como texto sobre fundo tingido: 6,9:1 */
+  --accent-soft: color-mix(in oklab, var(--primary) 14%, var(--surface));
+  --ring: var(--primary);
 
-  /* Status (texto sobre o próprio fundo suave ≥ 4,5:1) */
-  --success: #2fbf71;
-  --success-soft: color-mix(in oklab, #2fbf71 16%, var(--surface));
-  --warning: #f5b731;
-  --warning-soft: color-mix(in oklab, #f5b731 16%, var(--surface));
-  --danger: #f0505c;
-  --danger-fg: #f67a84; /* texto vermelho: 5,7:1 no fundo suave (o #f0505c daria 4,3:1) */
-  --danger-soft: color-mix(in oklab, #f0505c 16%, var(--surface));
-  --info: #4c9aff;
-  --info-soft: color-mix(in oklab, #4c9aff 16%, var(--surface));
+  /* Status: ponto + palavra, texto na cor sobre o fundo suave (≥ 6,6:1) */
+  --success: #2fbf71; /* concluído, aprovado, entregue */
+  --success-soft: color-mix(in oklab, var(--success) 16%, var(--surface));
+  --info: #38bdf8; /* confirmado, enviado, pronto */
+  --info-soft: color-mix(in oklab, var(--info) 16%, var(--surface));
+  --warning: #f5b731; /* atenção, em serviço */
+  --warning-soft: color-mix(in oklab, var(--warning) 16%, var(--surface));
+  --danger: #ff8fa3; /* recusado, cancelado, erro: rosa de propósito, para não confundir com o acento */
+  --danger-fg: var(--danger);
+  --danger-soft: color-mix(in oklab, var(--danger) 16%, var(--surface));
   --destructive: var(--danger);
 
   /* Profissionais: ordem validada para daltonismo (pares vizinhos ΔE ≥ 19).

@@ -1,6 +1,6 @@
 # Sistema de design · Ponto Neutro
 
-Conceito: **painel de instrumentos de um carro esportivo**. Tema escuro como padrão, leitura técnica e sóbria, um único acento forte. Tudo nasce dos tokens em [`src/app/globals.css`](../src/app/globals.css); nenhuma tela usa cor, raio ou duração solta.
+Tema escuro sobre preto, leitura técnica e sóbria, **um único acento**. A hierarquia vem de tipografia, espaçamento, alinhamento e contraste; **nada de decoração**. Tudo nasce dos tokens em [`src/app/globals.css`](../src/app/globals.css); nenhuma tela usa cor, raio ou duração solta.
 
 ## Cores
 
@@ -8,40 +8,50 @@ Conceito: **painel de instrumentos de um carro esportivo**. Tema escuro como pad
 
 | Token | Valor | Uso | Contraste medido |
 |---|---|---|---|
-| `--background` | `#0E0F11` | fundo da página | — |
-| `--surface` | `#15171A` | nível 1: cartões, barra lateral, tabelas | — |
-| `--surface-2` | `#1C1F23` | nível 2: campos, hover, popover, menu "Mais" | — |
-| `--border` | `#2A2E33` | divisórias decorativas | — |
-| `--input` | `#6B727C` | borda de campos e botões "outline" | 3,4:1 no nível 2 (elemento de interface ≥ 3:1) |
-| `--foreground` | `#F2F3F5` | texto principal | 17,3:1 no fundo · 14,9:1 no nível 2 |
-| `--muted-foreground` | `#A6ACB5` | texto secundário | 8,4:1 no fundo · 7,2:1 no nível 2 |
+| `--background` | `#000000` | fundo da página | — |
+| `--surface` | `#0A0A0A` | nível 1: cartões, barra lateral, tabelas | — |
+| `--surface-2` | `#151515` | nível 2: item ativo, hover, popover, campos | — |
+| `--border` | `#262626` | divisórias | — |
+| `--border-strong` | `#3D3D3D` | divisória de destaque (popover, hover de cartão) | — |
+| `--input` | `#6B6B6B` | borda de campos e botões "outline" | 3,4:1 no nível 2 |
+| `--foreground` | `#FFFFFF` | texto principal | 21:1 no fundo |
+| `--muted-foreground` | `#A8A8A8` | texto secundário | 8,8:1 no fundo · 8,3:1 no nível 1 · 7,7:1 no nível 2 |
 
 Profundidade vem do **contraste entre superfícies**, não de sombras.
 
-### Acento: laranja-sinal
+### Acento
 
 | Token | Valor | Uso |
 |---|---|---|
-| `--primary` | `#FF6A1A` | ação principal, item ativo do menu, foco, dado em destaque (total, ponteiro, barras de série única) |
-| `--primary-foreground` | `#0E0F11` | texto sobre o laranja: **6,7:1** (branco daria 2,9:1 e não passa) |
-| `--accent-soft` | laranja 14% sobre o nível 1 | fundo do item ativo do menu e da coluna "hoje" |
+| `--primary` | `#FF422A` | ver regras abaixo · 5,7:1 como dado no nível 1 |
+| `--primary-foreground` | `#000000` | texto sobre o acento: **6,1:1**. Branco daria 3,5:1 e **nunca** é usado. |
+| `--accent-fg` | `#FF7A66` | acento como texto sobre fundo tingido: 6,9:1 |
+| `--accent-soft` | acento 14% sobre o nível 1 | fundo do item ativo do menu |
 
-Regra: o laranja aparece **uma vez por região** de atenção. Se tudo é laranja, nada é.
+**Onde o acento aparece (e só aí):**
+1. Botões primários (uma ação principal por tela).
+2. Item ativo do menu (fundo tingido, filete e ícone).
+3. Anel de foco.
+4. Série principal dos gráficos (barras de faturamento, minigráficos, ranking) e a linha da hora atual na agenda.
+5. Dado de destaque (o total do orçamento).
 
-### Status
+**Onde nunca aparece:** códigos como ORC-0144 (fonte mono, texto principal), links comuns (branco sublinhado), bordas decorativas, títulos, cabeçalho do dia de hoje.
 
-| Situação | Cor | Fundo suave | Texto no fundo suave |
-|---|---|---|---|
-| Sucesso (aprovado, concluído, entregue) | `--success` `#2FBF71` | `--success-soft` | 5,8:1 |
-| Atenção (em serviço) | `--warning` `#F5B731` | `--warning-soft` | 7,2:1 |
-| Erro (recusado, cancelado) | `--danger` `#F0505C` | `--danger-soft` | texto usa `--danger-fg` `#F67A84`: 5,7:1 (o `#F0505C` dava 4,3:1) |
-| Informação (enviado, confirmado, pronto) | `--info` `#4C9AFF` | `--info-soft` | 5,0:1 |
+### Situações
 
-Selos sempre trazem **ponto + palavra**: a cor nunca é a única pista.
+Sempre **ponto colorido + palavra**; a cor nunca é a única pista.
+
+| Situação | Cor | Texto no fundo suave |
+|---|---|---|
+| Concluído, aprovado, entregue | `--success` `#2FBF71` | 6,6:1 |
+| Confirmado, enviado, pronto para retirada | `--info` `#38BDF8` | 7,2:1 |
+| Rascunho, agendado, aguardando | `--muted-foreground` `#A8A8A8` | 6,6:1 |
+| Atenção, em serviço | `--warning` `#F5B731` | 8,3:1 |
+| Recusado, cancelado, erro | `--danger` `#FF8FA3` | 7,2:1 · rosa de propósito, para não se confundir com o acento |
 
 ### Profissionais
 
-Cada profissional tem cor fixa, atribuída pela ordem alfabética entre quem executa serviços (`src/lib/professionals.ts`). A mesma cor aparece na agenda, no painel e nos filtros.
+Cor fixa por profissional (ordem alfabética entre quem executa serviços, `src/lib/professionals.ts`), igual em agenda, painel e filtros. Mantidas da versão anterior:
 
 | Token | Valor |
 |---|---|
@@ -51,69 +61,67 @@ Cada profissional tem cor fixa, atribuída pela ordem alfabética entre quem exe
 | `--pro-4` | `#9085E9` |
 | `--pro-5` | `#E66767` (reserva) |
 
-Validado com o verificador de paletas para daltonismo: pares vizinhos com ΔE ≥ 19,6 (deuteranopia/protanopia) e ≥ 20,9 em visão normal. Com 4 ou mais cores lado a lado nenhuma paleta separa todos os pares para daltônicos, por isso **cada bloco da agenda mostra as iniciais do profissional** e os filtros mostram o nome.
+Pares vizinhos validados para daltonismo (ΔE ≥ 19,6). Texto branco sobre o bloco tingido: ≥ 14,8:1.
 
 ## Tipografia
 
 | Papel | Fonte | Onde |
 |---|---|---|
-| Títulos, números grandes, rótulos técnicos | **Barlow Condensed** (500–700) | `font-display`, títulos de página em caixa alta, métricas do painel, `.eyebrow` |
-| Corpo | **Geist** | todo texto corrido e controles |
+| Títulos, números grandes, rótulos técnicos | **Barlow Condensed** (500–700) | `font-display`, títulos de página em caixa alta, métricas, `.eyebrow` |
+| Corpo | **Geist** | texto corrido e controles |
 | Placas e códigos | **JetBrains Mono** | `.plate`, horários da grade, ORC-0001 |
-
-Escala (nomes padrão do Tailwind, para o merge de classes reconhecer):
 
 | Classe | Tamanho | Uso |
 |---|---|---|
-| `text-xs` | 12px | **só** rótulos auxiliares (eixos, cabeçalho de tabela, legenda) |
+| `text-xs` | 12px | **só** rótulos auxiliares (eixos, cabeçalho de tabela) |
 | `text-sm` | 14px | corpo (mínimo) |
 | `text-base` | 16px | campos no celular (evita zoom do iOS) |
-| `text-2xl` | 24px | título de seção e de diálogo |
-| `text-4xl` | 36px | título de página |
-| `text-5xl` | 44px | números do painel |
+| `text-2xl` | 24px | título de seção |
+| `text-4xl` | 36px | título de página; números do painel no celular |
+| `text-5xl` | 44px | números do painel a partir de 640px |
 
 ## Forma, espaço e movimento
 
-- **Raios:** 10px (`rounded-lg`, botões e campos), 12px (`rounded-xl`, cartões), 14px (`rounded-2xl`, diálogos).
-- **Espaço:** escala de 4px do Tailwind (`gap-1` = 4px, `p-5` = 20px…).
-- **Bordas:** 1px; a barra lateral do item ativo e o filete do bloco da agenda usam 2–3px.
-- **Movimento:** 150ms (hover, cores) e 200–250ms (entrada de popover, números do painel). `prefers-reduced-motion` desliga animações e transições no CSS global, e o contador do painel mostra o valor direto.
-- **Detalhes de tema:** grade tracejada nos gráficos (como marcações de mostrador), régua de meia hora na agenda, mostrador com ponteiro nos estados vazio, 404 e erro.
+- **Raios:** 10px (botões, campos), 12px (cartões, popover), 14px (menu "Mais").
+- **Espaço:** escala de 4px do Tailwind.
+- **Movimento:** 150ms (hover, cor) e 200–250ms (entrada de popover, números do painel). `prefers-reduced-motion` desliga tudo.
+
+## Sem decoração
+
+- Proibido: formas, blobs, círculos, ondas, grades ou padrões de fundo, partículas, ilustrações abstratas, ícones decorativos, degradês.
+- Permitido: gráficos, selos de situação, ícones de **ação** (ligar, WhatsApp, PDF, menu), a marca, e a régua de horas da agenda (é a escala de tempo).
+- Estados vazio, de erro e 404: título, uma frase e uma ação. Sem ilustração.
 
 ## Componentes
 
 | Componente | Arquivo | Regras |
 |---|---|---|
-| Botão | `components/ui/button.tsx` | variantes `default` (laranja), `outline`, `secondary`, `ghost`, `destructive`, `link`. Altura 44px no celular, 36–40px a partir de 640px. `buttonVariants` sempre passa pelo merge para funcionar em links. |
-| Campo, select, textarea | `components/ui/input.tsx` (`fieldClass`), `components/form-field.tsx` | nível 2, borda `--input`, foco laranja; rótulo sempre visível; "(opcional)" quando não é obrigatório; erro abaixo, ligado por `aria-describedby`. |
-| Selo de situação | `components/status-badge.tsx` | tons `neutral`, `info`, `progress`, `success`, `danger`. |
-| Cartão | `components/ui/card.tsx` | `Card` + `CardHeader` (rótulo `.eyebrow` + ação à direita). |
-| Tabela | `components/ui/table.tsx` | cabeçalho fixo em `.eyebrow`, linhas com hover; no celular vira lista de cartões. |
-| Estado vazio | `components/empty-state.tsx` | mostrador + título + texto + ação de recuperação. |
-| Skeleton | `components/ui/skeleton.tsx` | blocos do nível 2 pulsando (sem pulso com movimento reduzido). |
-| Popover / diálogo | `app/(app)/agenda/agenda-grid.tsx` | `<dialog>` nativo: foco preso, Esc fecha, clique fora fecha. |
-| Abas / segmentado | agenda (Semana/Dia), orçamentos (situação) | links com `aria-current`; estado na URL. |
-| Linha de itens editável | `app/(app)/orcamentos/quote-form.tsx` | grade no desktop, cartão por item no celular; totais recalculados ao digitar. |
-| Linha do tempo de etapas | `app/(app)/ordens/[id]/page.tsx`, painel | 4 etapas; atual em laranja, concluídas em cinza claro. |
+| Botão | `components/ui/button.tsx` | `default` (acento, texto preto), `outline`, `secondary`, `ghost`, `destructive`, `link`. 44px no celular. |
+| Campo, select, textarea | `components/ui/input.tsx`, `components/form-field.tsx` | nível 2, borda `--input`; rótulo sempre visível; erro abaixo, ligado por `aria-describedby`. |
+| Selo de situação | `components/status-badge.tsx` | ponto + palavra sobre fundo suave. |
+| Cartão | `components/ui/card.tsx` | `Card` + `CardHeader` (rótulo `.eyebrow` + ação). |
+| Tabela | `components/ui/table.tsx` | cabeçalho fixo; abaixo de 900px (clientes) e 768px (orçamentos) vira cartões. |
+| Estado vazio | `components/empty-state.tsx` | só texto e ação. |
+| Popover da agenda | `app/(app)/agenda/agenda-grid.tsx` | abre no clique ou ao focar o bloco pelo teclado; Enter leva o foco para dentro; Esc fecha e devolve o foco. |
 | Navegação | `components/app-nav.tsx` | barra lateral ≥ 1024px; barra inferior + "Mais" no celular. |
-| Logotipo | `components/logo.tsx` | `LogoMark` (símbolo) e `Logo` (horizontal, opcional com slogan). Mesmas formas em `app/icon.svg`, `app/apple-icon.tsx` e no PDF. |
-
-## Logotipo
-
-Padrão em H do câmbio (três vias e a travessa) com o **ponto neutro** no centro em laranja, num quadro grafite. O quadro escuro faz o símbolo funcionar igual no tema escuro, em fundo claro (PDF) e a 16px (favicon). Wordmark em Barlow Condensed, caixa alta, "NEUTRO" no acento.
+| Logotipo | `components/logo.tsx` | quadro `#151515`, H branco, ponto `#FF422A`. Mesmas formas no favicon, no ícone do app e no PDF. |
 
 ## PDF do orçamento
 
-Fundo branco. O laranja-sinal fica nos elementos gráficos (ponto do logo, filetes); texto em laranja usa `#C2410C` (5,2:1 no branco). Mesmas fontes, registradas a partir dos pacotes `@fontsource`.
+Fundo branco. Acento `#E0301A` (4,6:1 no branco) nos filetes e no total; texto preto e cinza `#5C5C5C` (6,7:1). O ponto do logotipo mantém `#FF422A`, a cor da marca. Mesmas fontes, registradas a partir dos pacotes `@fontsource`.
 
 ## Decisões não especificadas no pedido
 
-- **Textos dos botões em caixa de frase** ("Novo agendamento"), não Title Case: é o padrão do português.
-- **Toast não foi criado:** nenhum fluxo atual precisa; mensagens de sucesso e erro aparecem junto da ação (botão, formulário), onde o leitor de tela já anuncia.
-- **"Serviços" fica no menu:** a rota já existia; no celular está em "Mais".
-- **Agenda no celular é sempre lista por horário**, inclusive na visão "Semana" (agrupada por dia).
-- **Linha da hora atual** é calculada no navegador e atualizada a cada minuto, para não divergir do horário do servidor.
-- **Indicadores sem série natural** (taxa de aprovação, veículos na oficina) não têm minigráfico; mostram a variação ou o detalhe em texto.
-- **Variação de "agendamentos hoje"** compara com o mesmo dia da semana anterior (segunda com segunda), não com o mês.
-- **Gráficos ocultos para leitor de tela**, com os mesmos dados em tabela ou lista de texto.
-- **Cabeçalho do celular só com a marca:** a navegação fica embaixo, ao alcance do polegar.
+- **Borda de campos `#6B6B6B`, não `#3D3D3D`:** a "borda forte" daria 1,7:1 sobre o nível 2, abaixo do mínimo de 3:1 para elementos de interface. `#262626` e `#3D3D3D` ficam para divisórias.
+- **Linha da hora atual no acento:** é dado de destaque (onde estamos no dia).
+- **Dia de hoje na agenda sem acento:** cabeçalho e coluna com o nível 2, mais o rótulo "Hoje".
+- **Etapa atual da OS em branco**, etapas concluídas em cinza: o acento fica reservado às ações.
+- **Avatares de iniciais removidos** (clientes e barra lateral): repetiam o nome, sem informação nova.
+- **Ícones das linhas do histórico removidos:** o texto já diz "Agendamento" ou "Orçamento".
+- **Visão de semana sem iniciais no bloco:** o pedido limita o bloco a horário e serviço; o profissional aparece no popover, no filtro e na visão de dia (uma coluna por profissional).
+- **Semana mais larga que a tela:** a grade rola para o lado dentro do próprio cartão; a página não rola.
+- **Orçamentos entre 768 e 1024px:** a coluna Data é escondida para nada ser cortado; ela aparece no detalhe do orçamento.
+- **Clientes abaixo de 900px:** cartões em duas colunas no tablet, uma no celular.
+- **Minigráficos em todos os indicadores:** taxa de aprovação por semana e veículos na oficina por dia, para os cartões terem a mesma altura sem espaço vazio.
+- **Toast não foi criado:** nenhum fluxo precisa; mensagens aparecem junto da ação.
+- **Textos dos botões em caixa de frase** ("Novo agendamento"), padrão do português.

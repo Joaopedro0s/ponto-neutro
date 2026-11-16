@@ -10,21 +10,12 @@ import { Table, tdClass, thClass, trClass } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatBRL, formatDate } from "@/lib/format";
-import { initials } from "@/lib/professionals";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const metadata: Metadata = { title: "Clientes" };
 
 // shortcut: lista sem paginação, até 200 clientes; paginar se a base crescer além disso.
 const LIMIT = 200;
-
-function Avatar({ name }: { name: string }) {
-  return (
-    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-surface-2 font-display text-sm font-semibold text-muted-foreground" aria-hidden="true">
-      {initials(name)}
-    </span>
-  );
-}
 
 function PlateChips({ plates, owner }: { plates: { plate: string; model: string }[]; owner: string }) {
   return (
@@ -35,7 +26,7 @@ function PlateChips({ plates, owner }: { plates: { plate: string; model: string 
             href={`/veiculos/${v.plate}`}
             title={v.model}
             translate="no"
-            className="plate inline-flex min-h-9 items-center rounded-md border border-input bg-surface-2 px-2 text-xs transition-colors duration-150 hover:border-primary hover:text-primary sm:min-h-7"
+            className="plate inline-flex min-h-9 items-center rounded-md border border-input bg-surface-2 px-2 text-xs transition-colors duration-150 hover:border-muted-foreground hover:bg-surface sm:min-h-7"
           >
             <span className="sr-only">Histórico da placa </span>
             {v.plate}
@@ -127,8 +118,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
             </p>
           )}
 
-          {/* Tablet e desktop: tabela */}
-          <div className="hidden md:block">
+          {/* A partir de 900px: tabela (abaixo disso as cinco colunas não cabem sem cortar o total) */}
+          <div className="hidden min-[900px]:block">
             <Table>
               <caption className="sr-only">Clientes</caption>
               <thead>
@@ -155,9 +146,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
                   <tr key={c.id} className={trClass}>
                     <td className={tdClass}>
                       <span className="flex items-center gap-3">
-                        <Avatar name={c.name} />
                         <span className="min-w-0">
-                          <Link href={`/clientes/${c.id}`} className="block font-medium underline-offset-4 hover:text-primary hover:underline">
+                          <Link href={`/clientes/${c.id}`} className="block font-medium underline-offset-4 hover:underline">
                             {c.name}
                           </Link>
                           {c.email && <span className="block truncate text-xs text-muted-foreground">{c.email}</span>}
@@ -176,12 +166,11 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
             </Table>
           </div>
 
-          {/* Celular: cartões compactos */}
-          <ul className="flex flex-col gap-2 md:hidden">
+          {/* Abaixo de 900px: cartões compactos (duas colunas no tablet) */}
+          <ul className="grid gap-2 sm:grid-cols-2 min-[900px]:hidden">
             {customers.map((c) => (
               <li key={c.id} className="rounded-xl border bg-card p-4">
                 <div className="flex items-center gap-3">
-                  <Avatar name={c.name} />
                   <div className="min-w-0 flex-1">
                     <Link href={`/clientes/${c.id}`} className="block truncate font-medium">
                       {c.name}

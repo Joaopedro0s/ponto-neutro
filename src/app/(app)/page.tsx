@@ -35,22 +35,21 @@ function Change({ value, label, points = false }: { value: number | null; label:
   );
 }
 
-function Kpi({ label, children, footer, spark, sparkId, wide = false }: { label: string; children: React.ReactNode; footer: React.ReactNode; spark?: number[]; sparkId: string; wide?: boolean }) {
+// Cartão de indicador: no celular, dois por linha (o faturamento ocupa a linha inteira).
+function Kpi({ label, children, footer, spark, wide = false }: { label: string; children: React.ReactNode; footer: React.ReactNode; spark: number[]; wide?: boolean }) {
   return (
-    <Card className={cn("flex flex-col gap-2 p-5", wide && "sm:col-span-2")}>
+    <Card className={cn("flex min-w-0 flex-col gap-1.5 p-4 sm:gap-2 sm:p-5", wide && "col-span-2")}>
       <dt className="eyebrow">{label}</dt>
-      <dd className="font-display text-5xl font-semibold tracking-wide">{children}</dd>
+      <dd className="font-display text-4xl font-semibold tracking-wide sm:text-5xl">{children}</dd>
       <dd>{footer}</dd>
-      {spark && (
-        <dd className="mt-auto pt-2">
-          <Sparkline values={spark} id={sparkId} />
-        </dd>
-      )}
+      <dd className="mt-auto pt-1">
+        <Sparkline values={spark} />
+      </dd>
     </Card>
   );
 }
 
-const linkClass = "text-sm font-medium text-primary underline-offset-4 hover:underline";
+const linkClass = "text-sm font-medium underline underline-offset-4 hover:text-muted-foreground";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -77,11 +76,10 @@ export default async function DashboardPage() {
         <p className="text-sm text-muted-foreground">Variações comparam com o período anterior equivalente.</p>
       </div>
 
-      <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <dl className="grid grid-cols-2 gap-3 xl:grid-cols-6">
         <Kpi
           label="Faturamento do mês"
           wide
-          sparkId="fat"
           spark={d.weeks.map((w) => w.total)}
           footer={<Change value={delta(d.revenue.current, d.revenue.previous)} label={`vs. ${formatBRL(d.revenue.previous)}`} />}
         >
@@ -89,7 +87,6 @@ export default async function DashboardPage() {
         </Kpi>
         <Kpi
           label="Orçamentos aprovados"
-          sparkId="apr"
           spark={d.weeks.map((w) => w.approvals)}
           footer={<Change value={delta(d.approvedQuotes.current, d.approvedQuotes.previous)} label={`vs. ${d.approvedQuotes.previous} no mês anterior`} />}
         >
@@ -97,7 +94,7 @@ export default async function DashboardPage() {
         </Kpi>
         <Kpi
           label="Taxa de aprovação"
-          sparkId="taxa"
+          spark={d.approvalPerWeek}
           footer={
             <Change
               value={rateNow !== null && ratePrev !== null ? rateNow - ratePrev : null}
@@ -110,7 +107,6 @@ export default async function DashboardPage() {
         </Kpi>
         <Kpi
           label="Agendamentos hoje"
-          sparkId="ag"
           spark={d.perDay.map((p) => p.count)}
           footer={
             closedToday ? (
@@ -122,7 +118,7 @@ export default async function DashboardPage() {
         >
           <CountUp value={d.appointmentsToday.current} format="int" />
         </Kpi>
-        <Kpi label="Veículos na oficina" sparkId="ofi" footer={<p className="text-sm text-muted-foreground">{ready} pronto{ready === 1 ? "" : "s"} para retirada</p>}>
+        <Kpi label="Veículos na oficina" spark={d.inShopPerDay} footer={<p className="text-sm text-muted-foreground">{ready} pronto{ready === 1 ? "" : "s"} para retirada</p>}>
           <CountUp value={d.inShop.length} format="int" />
         </Kpi>
       </dl>
@@ -217,7 +213,7 @@ export default async function DashboardPage() {
                       <span className="flex flex-col gap-1.5">
                         <span className="flex gap-1" aria-hidden="true">
                           {STAGES.map((s, i) => (
-                            <span key={s} className={cn("h-1.5 flex-1 rounded-full", i < step ? "bg-muted-foreground" : i === step ? "bg-primary" : "bg-surface-2")} />
+                            <span key={s} className={cn("h-1.5 flex-1 rounded-full", i < step ? "bg-muted-foreground" : i === step ? "bg-foreground" : "bg-surface-2")} />
                           ))}
                         </span>
                         <span className="text-xs text-muted-foreground">

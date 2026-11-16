@@ -21,7 +21,7 @@ Na tela de entrada, clique em **Entrar como demonstração**. Não é preciso ca
 
 | Entrada | Painel |
 |---|---|
-| ![Tela de entrada com velocímetro e botão de demonstração](docs/screenshots/login.png) | ![Painel com indicadores, faturamento e veículos em serviço](docs/screenshots/dashboard.png) |
+| ![Tela de entrada com logotipo, slogan e formulário](docs/screenshots/login.png) | ![Painel com indicadores, faturamento e veículos em serviço](docs/screenshots/dashboard.png) |
 | **Agenda da semana** | **Clientes** |
 | ![Agenda em grade de horas, colorida por profissional](docs/screenshots/agenda-semana.png) | ![Tabela de clientes com placas e total gasto](docs/screenshots/clientes.png) |
 | **Orçamento** | **PDF do orçamento** |
@@ -45,7 +45,7 @@ Todas as telas, em 1440px e 390px, estão em [`docs/screenshots`](docs/screensho
 
 | Item | Situação |
 |---|---|
-| Capturas do redesenho: todas as telas em 1440px e 390px, PDF e antes/depois | ✅ Feitas (dados do seed) |
+| Capturas com a paleta nova: todas as telas em 1440px e 390px, PDF e antes/depois | ✅ Feitas (dados do seed) |
 | Publicar na Vercel e colocar o link da demonstração acima | ⏳ Pendente |
 | Trocar o selo "deploy pendente" pelo selo da Vercel | ⏳ Pendente |
 | Refazer as capturas a partir da versão publicada (o link do WhatsApp passa a mostrar o domínio real) | ⏳ Pendente |
@@ -199,7 +199,7 @@ As datas do seed são relativas ao dia em que ele roda. Rodar `npm run db:seed` 
 npm test                    # contas do orçamento, datas, fuso, placas, telefones e senhas
 npm run lint                # padrões de código
 npm run typecheck           # tipos
-npm run qa                  # com o app rodando: acessibilidade (WCAG 2.1 AA) e rolagem lateral em 28 telas (1440px e 390px)
+npm run qa                  # com o app rodando: acessibilidade (WCAG 2.1 AA) e rolagem lateral em 56 telas (1440, 1024, 768 e 390px)
 npm run qa -- --capturas    # o mesmo, salvando as capturas em docs/screenshots
 ```
 
@@ -208,14 +208,16 @@ O `qa` usa o Edge instalado no computador. Para usar o Chrome, rode com `QA_BROW
 ## Decisões de design e aprendizados
 
 **Produto e interface** (detalhes em [`docs/design-system.md`](docs/design-system.md))
-- **Painel de instrumentos**: tema escuro grafite, superfícies em dois níveis e um único acento laranja-sinal, usado só em ação principal, item ativo, foco e dado importante. A profundidade vem do contraste entre superfícies, sem sombras.
+- **Preto com um único acento**: fundo #000000, superfícies em dois níveis e um vermelho-laranja (#FF422A) usado só em botão primário, item ativo do menu, anel de foco, série principal dos gráficos e dado de destaque. Códigos (ORC-0144), links e bordas ficam em branco ou cinza.
+- **Sem decoração**: nenhuma forma, grade de fundo ou ilustração. Todo elemento gráfico carrega informação (gráfico, situação, ação) ou é a marca; a hierarquia vem de tipografia, espaçamento e contraste. Estados vazios e de erro são texto e uma ação.
 - **Tipografia de sinalização**: Barlow Condensed em títulos e números, Geist no corpo e JetBrains Mono em placas e códigos. O corpo nunca fica abaixo de 14px.
-- **Marca**: o "H" do câmbio com o ponto neutro em laranja, num quadro grafite que funciona no tema escuro, no PDF claro e a 16px no favicon.
-- **Cor por profissional**: cada um tem uma cor fixa em toda a interface. A ordem foi validada para daltonismo e, como nenhuma paleta separa 4 cores lado a lado para todos, cada bloco da agenda também mostra as iniciais.
-- **Agenda em grade de horas**: eixo de 08:00 a 18:00, blocos com altura proporcional à duração, faixas lado a lado quando há sobreposição, linha da hora atual, filtro por profissional e detalhes num diálogo. No celular, vira lista por horário.
-- **Navegação**: barra lateral fixa no desktop; no celular, barra inferior ao alcance do polegar, com o menu "Mais".
-- **Contraste medido, não estimado**: texto ≥ 4,5:1 e bordas de controles ≥ 3:1. Por isso o texto sobre o laranja é escuro (branco daria 2,9:1) e o vermelho dos selos usa um tom mais claro.
-- **Acessibilidade**: foco laranja visível em tudo, alvos de toque de 44px no celular, gráficos com os mesmos dados em tabela para leitores de tela e animações de 150 a 250ms que somem com "reduzir movimento". A auditoria automática passa sem apontamentos em 28 telas (14 em 1440px e 14 em 390px).
+- **Marca**: o "H" do câmbio com o ponto neutro no acento, num quadro escuro que funciona no tema escuro, no PDF claro e a 16px no favicon.
+- **Situações com cores próprias**: recusado e cancelado em rosa (#FF8FA3), de propósito, para não se confundir com o acento. Sempre ponto colorido mais a palavra.
+- **Cor por profissional**: cada um tem uma cor fixa em toda a interface; a ordem foi validada para daltonismo.
+- **Agenda**: a visão padrão é o dia, com uma coluna por profissional e eixo de horas. A semana garante largura mínima por faixa, mostra só horário e serviço e abre os detalhes num popover ao clicar ou ao focar pelo teclado. No celular, lista do dia.
+- **Larguras médias**: clientes viram cartões abaixo de 900px e orçamentos abaixo de 768px; na faixa de 768 a 1024px a tabela de orçamentos esconde a data para nada ser cortado.
+- **Contraste medido, não estimado**: texto ≥ 4,5:1 e bordas de campos ≥ 3:1. Por isso o texto sobre o acento é preto (branco daria 3,5:1).
+- **Acessibilidade**: foco visível em tudo, alvos de toque de 44px no celular, gráficos com os mesmos dados em tabela para leitores de tela e animações curtas que somem com "reduzir movimento". A auditoria automática passa sem apontamentos em 56 telas (14 telas em 1440, 1024, 768 e 390px).
 - **Mensagens em português em todo lugar**, inclusive as de validação padrão.
 
 **Regras de negócio**
@@ -237,7 +239,8 @@ O `qa` usa o Edge instalado no computador. Para usar o Chrome, rode com `QA_BROW
 - **Telefones com DDD (00)**, que não existe, e e-mails no domínio `example.com`.
 - **Funilaria no catálogo**: o escopo pede um funileiro na equipe, então o catálogo inclui "Reparo de pequenos amassados".
 - **Fechado aos domingos**: num domingo, "agendamentos do dia" fica vazio de propósito.
-- **Volume**: cerca de 300 agendamentos e 150 orçamentos em 3 meses, com sextas e sábados mais cheios e movimento crescendo rumo ao fim do ano.
+- **Volume**: cerca de 300 agendamentos e 150 orçamentos em 3 meses, com sextas e sábados mais cheios.
+- **Mês atual coerente**: a geração é aleatória e reproduzível; o seed testa sementes em sequência e grava a primeira em que o mês atual cresce entre 8% e 15% sobre o mesmo período do mês anterior, com a taxa de aprovação estável ou em leve alta.
 
 ## Próximos passos
 

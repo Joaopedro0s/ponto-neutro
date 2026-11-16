@@ -26,14 +26,14 @@ Font.register({
 Font.register({ family: "JetBrains Mono", src: font("jetbrains-mono", "jetbrains-mono-latin-500-normal.woff") });
 Font.registerHyphenationCallback((word) => [word]); // não quebrar palavras com hífen
 
-// Fundo claro: o laranja-sinal fica nos elementos gráficos; texto em laranja usa um tom
-// mais escuro (#c2410c, 5,2:1 no branco), porque o #ff6a1a daria só 2,9:1.
-const ACCENT = LOGO.neutral;
-const ACCENT_TEXT = "#c2410c";
-const INK = "#0e0f11";
-const MUTED = "#5b616a"; // 6,3:1 no branco
-const LINE = "#e2e4e8";
-const ZEBRA = "#f5f6f8";
+// Fundo branco: acento #e0301a (4,6:1 no branco) em filetes e no total. O ponto do logotipo
+// mantém a cor da marca.
+const ACCENT = "#e0301a";
+const ACCENT_TEXT = ACCENT;
+const INK = "#000000";
+const MUTED = "#5c5c5c"; // 6,7:1 no branco
+const LINE = "#e5e5e5";
+const ZEBRA = "#f5f5f5";
 
 const s = StyleSheet.create({
   page: { padding: 40, paddingBottom: 64, fontSize: 9.5, color: INK, fontFamily: "Geist" },

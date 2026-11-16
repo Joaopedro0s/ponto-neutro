@@ -6,7 +6,7 @@
 import "dotenv/config";
 import { db } from "../src/lib/db";
 import { businessHours } from "../src/lib/company";
-import { addDays, atSp, spDay, weekday } from "../src/lib/schedule";
+import { addDays, atSp, monthToDateRanges, spDay, weekday } from "../src/lib/schedule";
 import { DEMO_ACCOUNT } from "../src/lib/demo";
 import { specialtyFor } from "../src/lib/labels";
 import { hashPassword } from "../src/lib/password";
@@ -313,154 +313,229 @@ async function main() {
   });
   const sizeFactor = new Map(vehicles.map((v) => [v.id, MODELS.find(([m]) => m === v.model)![1]]));
 
-  // ---------- Agenda: últimos 90 dias e próximos 10, sem conflito por profissional ----------
+  // Gera agenda, orçamentos e OS em memória a partir de uma semente. O seed testa sementes em
+  // sequência e grava a primeira cujo mês atual fique coerente (ver `fits` abaixo).
+  function simulate(rngSeed: number) {
+    state = rngSeed;
+    // ---------- Agenda: últimos 90 dias e próximos 10, sem conflito por profissional ----------
 
-  type Slot = { start: Date; end: Date };
-  const busy = new Map<string, Slot[]>(professionals.map((p) => [p.id, []]));
-  const appointments: {
-    customerId: string;
-    vehicleId: string;
-    serviceId: string;
-    professionalId: string;
-    startsAt: Date;
-    endsAt: Date;
-    status: AppointmentStatus;
-    notes: string | null;
-  }[] = [];
+    type Slot = { start: Date; end: Date };
+    const busy = new Map<string, Slot[]>(professionals.map((p) => [p.id, []]));
+    const appointments: {
+      customerId: string;
+      vehicleId: string;
+      serviceId: string;
+      professionalId: string;
+      startsAt: Date;
+      endsAt: Date;
+      status: AppointmentStatus;
+      notes: string | null;
+    }[] = [];
 
-  for (let offset = -90; offset <= 10; offset++) {
-    const day = addDays(today, offset);
-    const hours = businessHours[weekday(day)];
-    if (!hours) continue;
+    for (let offset = -90; offset <= 10; offset++) {
+      const day = addDays(today, offset);
+      const hours = businessHours[weekday(day)];
+      if (!hours) continue;
 
-    // Sazonalidade: movimento cresce rumo ao fim do ano, sextas e sábados são mais cheios
-    // e a agenda futura ainda está sendo preenchida.
-    const trend = 0.85 + 0.3 * ((offset + 90) / 90);
-    const dayFactor = [0, 0.8, 1, 1, 1.1, 1.35, 1.2][weekday(day)];
-    const fill = offset > 0 ? Math.max(0.25, 1 - offset / 12) : 1;
-    const count = Math.floor(3.4 * trend * dayFactor * fill + rng());
+      // Sazonalidade: movimento cresce rumo ao fim do ano, sextas e sábados são mais cheios
+      // e a agenda futura ainda está sendo preenchida.
+      const trend = 0.85 + 0.3 * ((offset + 90) / 90);
+      const dayFactor = [0, 0.8, 1, 1, 1.1, 1.35, 1.2][weekday(day)];
+      const fill = offset > 0 ? Math.max(0.25, 1 - offset / 12) : 1;
+      const count = Math.floor(3.4 * trend * dayFactor * fill + rng());
 
-    for (let i = 0; i < count; i++) {
-      const service = weighted(services.map((s) => [s, serviceSeed.get(s.id)!.weight] as const));
-      const eligible = professionals.filter((p) => p.specialty === specialtyFor[service.category]);
-      // Clientes recorrentes aparecem mais: alguns veículos concentram o histórico.
-      const vehicle = vehicles[Math.floor(vehicles.length * rng() ** 1.15)];
+      for (let i = 0; i < count; i++) {
+        const service = weighted(services.map((s) => [s, serviceSeed.get(s.id)!.weight] as const));
+        const eligible = professionals.filter((p) => p.specialty === specialtyFor[service.category]);
+        // Clientes recorrentes aparecem mais: alguns veículos concentram o histórico.
+        const vehicle = vehicles[Math.floor(vehicles.length * rng() ** 1.15)];
 
-      const candidates: { professionalId: string; start: Date; end: Date }[] = [];
-      for (const pro of eligible) {
-        for (let m = hours.open * 60; m + service.durationMinutes <= hours.close * 60; m += 30) {
-          const start = at(day, m);
-          const end = new Date(start.getTime() + service.durationMinutes * 60_000);
-          if (!busy.get(pro.id)!.some((b) => start < b.end && end > b.start)) {
-            candidates.push({ professionalId: pro.id, start, end });
+        const candidates: { professionalId: string; start: Date; end: Date }[] = [];
+        for (const pro of eligible) {
+          for (let m = hours.open * 60; m + service.durationMinutes <= hours.close * 60; m += 30) {
+            const start = at(day, m);
+            const end = new Date(start.getTime() + service.durationMinutes * 60_000);
+            if (!busy.get(pro.id)!.some((b) => start < b.end && end > b.start)) {
+              candidates.push({ professionalId: pro.id, start, end });
+            }
           }
         }
+        if (!candidates.length) continue;
+        const slot = pick(candidates);
+        busy.get(slot.professionalId)!.push(slot);
+
+        let status: AppointmentStatus;
+        if (slot.end <= now) status = chance(0.09) ? "CANCELED" : "COMPLETED";
+        else if (offset > 0) status = chance(0.06) ? "CANCELED" : chance(0.45) ? "CONFIRMED" : "SCHEDULED";
+        else status = "CONFIRMED";
+
+        appointments.push({
+          customerId: vehicle.customerId,
+          vehicleId: vehicle.id,
+          serviceId: service.id,
+          professionalId: slot.professionalId,
+          startsAt: slot.start,
+          endsAt: slot.end,
+          status,
+          notes: chance(0.15) ? "Cliente pediu para avisar quando estiver pronto." : null,
+        });
       }
-      if (!candidates.length) continue;
-      const slot = pick(candidates);
-      busy.get(slot.professionalId)!.push(slot);
+    }
+    appointments.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
-      let status: AppointmentStatus;
-      if (slot.end <= now) status = chance(0.09) ? "CANCELED" : "COMPLETED";
-      else if (offset > 0) status = chance(0.06) ? "CANCELED" : chance(0.45) ? "CONFIRMED" : "SCHEDULED";
-      else status = "CONFIRMED";
+    // ---------- Orçamentos: nascem de parte dos atendimentos já realizados ----------
 
-      appointments.push({
-        customerId: vehicle.customerId,
-        vehicleId: vehicle.id,
-        serviceId: service.id,
-        professionalId: slot.professionalId,
-        startsAt: slot.start,
-        endsAt: slot.end,
+    type ItemSeed = {
+      kind: QuoteItemKind;
+      description: string;
+      quantity: number;
+      unitPriceCents: number;
+      serviceId: string | null;
+    };
+    const quotes: {
+      customerId: string;
+      vehicleId: string;
+      status: QuoteStatus;
+      createdAt: Date;
+      sentAt: Date | null;
+      decidedAt: Date | null;
+      validUntil: Date;
+      notes: string | null;
+      items: ItemSeed[];
+      discountCents: number;
+    }[] = [];
+
+    for (const appt of appointments) {
+      if (appt.status === "CANCELED" || appt.startsAt > now || !chance(0.62)) continue;
+      const main = services.find((s) => s.id === appt.serviceId)!;
+      const seed = serviceSeed.get(main.id)!;
+      const factor = main.category === "DETAILING" ? sizeFactor.get(appt.vehicleId)! : 1;
+
+      const items: ItemSeed[] = [
+        {
+          kind: "LABOR",
+          description: main.name,
+          quantity: 1,
+          unitPriceCents: Math.round((seed.priceCents * factor) / 500) * 500,
+          serviceId: main.id,
+        },
+      ];
+      for (const part of seed.parts ?? []) {
+        if (part.optional && !chance(0.45)) continue;
+        items.push({ kind: "PART", description: part.description, quantity: part.quantity, unitPriceCents: part.priceCents, serviceId: null });
+      }
+      // Venda casada comum: lavagem junto de outro serviço de estética, alinhamento junto de mecânica.
+      const extra = main.category === "DETAILING" && main.name !== "Lavagem técnica" && chance(0.3)
+        ? services.find((s) => s.name === "Lavagem técnica")
+        : main.category === "MECHANICS" && main.name !== "Alinhamento e balanceamento" && chance(0.25)
+          ? services.find((s) => s.name === "Alinhamento e balanceamento")
+          : undefined;
+      if (extra) {
+        items.push({ kind: "LABOR", description: extra.name, quantity: 1, unitPriceCents: serviceSeed.get(extra.id)!.priceCents, serviceId: extra.id });
+      }
+
+      const createdAt = new Date(appt.startsAt.getTime() + 30 * 60_000);
+      const ageDays = (now.getTime() - createdAt.getTime()) / 86_400_000;
+      const status: QuoteStatus =
+        ageDays > 10
+          ? weighted([["APPROVED", 68], ["REJECTED", 27], ["SENT", 5]] as const)
+          : ageDays > 3
+            ? weighted([["APPROVED", 55], ["REJECTED", 15], ["SENT", 30]] as const)
+            : weighted([["DRAFT", 30], ["SENT", 45], ["APPROVED", 25]] as const);
+
+      const sentAt = status === "DRAFT" ? null : minDate(new Date(createdAt.getTime() + int(20, 180) * 60_000), now);
+      const decidedAt =
+        status === "APPROVED" || status === "REJECTED"
+          ? minDate(new Date(sentAt!.getTime() + int(1, 40) * 3600_000), now)
+          : null;
+      const subtotal = quoteTotals(items, 0).subtotalCents;
+
+      quotes.push({
+        customerId: appt.customerId,
+        vehicleId: appt.vehicleId,
         status,
-        notes: chance(0.15) ? "Cliente pediu para avisar quando estiver pronto." : null,
+        createdAt,
+        sentAt,
+        decidedAt,
+        validUntil: new Date(createdAt.getTime() + 15 * 86_400_000),
+        notes: chance(0.35) ? pick(QUOTE_NOTES) : null,
+        items,
+        discountCents: chance(0.3) ? Math.floor((subtotal * pick([0.05, 0.1])) / 100) * 100 : 0,
       });
     }
-  }
-  appointments.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-  await db.appointment.createMany({ data: appointments });
 
-  // ---------- Orçamentos: nascem de parte dos atendimentos já realizados ----------
+    // ---------- Ordens de serviço: uma por orçamento aprovado ----------
 
-  type ItemSeed = {
-    kind: QuoteItemKind;
-    description: string;
-    quantity: number;
-    unitPriceCents: number;
-    serviceId: string | null;
-  };
-  const quotes: {
-    customerId: string;
-    vehicleId: string;
-    status: QuoteStatus;
-    createdAt: Date;
-    sentAt: Date | null;
-    decidedAt: Date | null;
-    validUntil: Date;
-    notes: string | null;
-    items: ItemSeed[];
-    discountCents: number;
-  }[] = [];
+    const approved = quotes
+      .map((q, index) => ({ index, ...q }))
+      .filter((q) => q.status === "APPROVED")
+      .sort((a, b) => a.decidedAt!.getTime() - b.decidedAt!.getTime());
 
-  for (const appt of appointments) {
-    if (appt.status === "CANCELED" || appt.startsAt > now || !chance(0.62)) continue;
-    const main = services.find((s) => s.id === appt.serviceId)!;
-    const seed = serviceSeed.get(main.id)!;
-    const factor = main.category === "DETAILING" ? sizeFactor.get(appt.vehicleId)! : 1;
+    // Os aprovados mais recentes ainda estão na oficina, distribuídos pelas etapas.
+    const inShop: WorkOrderStatus[] = ["WAITING", "IN_PROGRESS", "IN_PROGRESS", "IN_PROGRESS", "READY", "READY"];
+    const workOrders = approved.map((q, i) => {
+      const fromEnd = approved.length - 1 - i;
+      const status: WorkOrderStatus = fromEnd < inShop.length ? inShop[fromEnd] : "DELIVERED";
+      const mainService = services.find((s) => s.id === q.items[0].serviceId)!;
+      const pro = professionals.find((p) => p.specialty === specialtyFor[mainService.category])!;
 
-    const items: ItemSeed[] = [
-      {
-        kind: "LABOR",
-        description: main.name,
-        quantity: 1,
-        unitPriceCents: Math.round((seed.priceCents * factor) / 500) * 500,
-        serviceId: main.id,
-      },
-    ];
-    for (const part of seed.parts ?? []) {
-      if (part.optional && !chance(0.45)) continue;
-      items.push({ kind: "PART", description: part.description, quantity: part.quantity, unitPriceCents: part.priceCents, serviceId: null });
-    }
-    // Venda casada comum: lavagem junto de outro serviço de estética, alinhamento junto de mecânica.
-    const extra = main.category === "DETAILING" && main.name !== "Lavagem técnica" && chance(0.3)
-      ? services.find((s) => s.name === "Lavagem técnica")
-      : main.category === "MECHANICS" && main.name !== "Alinhamento e balanceamento" && chance(0.25)
-        ? services.find((s) => s.name === "Alinhamento e balanceamento")
-        : undefined;
-    if (extra) {
-      items.push({ kind: "LABOR", description: extra.name, quantity: 1, unitPriceCents: serviceSeed.get(extra.id)!.priceCents, serviceId: extra.id });
-    }
+      const startDay = nextOpenDay(addDays(spDay(q.decidedAt!), chance(0.6) ? 0 : 1));
+      const startedAt = minDate(at(startDay, 8 * 60 + int(0, 4) * 30), now);
+      const readyDay = nextOpenDay(addDays(startDay, mainService.durationMinutes > 240 ? 1 : 0));
+      const readyAt = minDate(at(readyDay, 16 * 60 + int(0, 3) * 30), now);
+      const deliveredAt = minDate(at(nextOpenDay(addDays(readyDay, chance(0.7) ? 0 : 1)), 17 * 60 + int(0, 2) * 30), now);
 
-    const createdAt = new Date(appt.startsAt.getTime() + 30 * 60_000);
-    const ageDays = (now.getTime() - createdAt.getTime()) / 86_400_000;
-    const status: QuoteStatus =
-      ageDays > 10
-        ? weighted([["APPROVED", 68], ["REJECTED", 27], ["SENT", 5]] as const)
-        : ageDays > 3
-          ? weighted([["APPROVED", 55], ["REJECTED", 15], ["SENT", 30]] as const)
-          : weighted([["DRAFT", 30], ["SENT", 45], ["APPROVED", 25]] as const);
-
-    const sentAt = status === "DRAFT" ? null : minDate(new Date(createdAt.getTime() + int(20, 180) * 60_000), now);
-    const decidedAt =
-      status === "APPROVED" || status === "REJECTED"
-        ? minDate(new Date(sentAt!.getTime() + int(1, 40) * 3600_000), now)
-        : null;
-    const subtotal = quoteTotals(items, 0).subtotalCents;
-
-    quotes.push({
-      customerId: appt.customerId,
-      vehicleId: appt.vehicleId,
-      status,
-      createdAt,
-      sentAt,
-      decidedAt,
-      validUntil: new Date(createdAt.getTime() + 15 * 86_400_000),
-      notes: chance(0.35) ? pick(QUOTE_NOTES) : null,
-      items,
-      discountCents: chance(0.3) ? Math.floor((subtotal * pick([0.05, 0.1])) / 100) * 100 : 0,
+      return {
+        quoteIndex: q.index,
+        vehicleId: q.vehicleId,
+        professionalId: pro.id,
+        status,
+        createdAt: q.decidedAt!,
+        startedAt: status === "WAITING" ? null : startedAt,
+        readyAt: status === "READY" || status === "DELIVERED" ? readyAt : null,
+        deliveredAt: status === "DELIVERED" ? deliveredAt : null,
+      };
     });
+
+
+    return { appointments, quotes, workOrders };
   }
 
+  // Mesmas contas do painel: faturamento = OS entregues; aprovação = decididos nos últimos 30 dias.
+  const { current, previous } = monthToDateRanges(now);
+  const DAY = 86_400_000;
+  function metrics(sim: ReturnType<typeof simulate>) {
+    const totalOf = (i: number) => quoteTotals(sim.quotes[i].items, sim.quotes[i].discountCents).totalCents;
+    const revenue = (r: { from: Date; to: Date }) =>
+      sim.workOrders.filter((w) => w.deliveredAt && w.deliveredAt >= r.from && w.deliveredAt < r.to).reduce((sum, w) => sum + totalOf(w.quoteIndex), 0);
+    const rate = (from: number, to: number) => {
+      const decided = sim.quotes.filter((q) => q.decidedAt && now.getTime() - q.decidedAt.getTime() >= from * DAY && now.getTime() - q.decidedAt.getTime() < to * DAY);
+      const approvedCount = decided.filter((q) => q.status === "APPROVED").length;
+      return decided.length ? approvedCount / decided.length : 0;
+    };
+    const prevRevenue = revenue(previous);
+    return { growth: prevRevenue ? revenue(current) / prevRevenue - 1 : 0, approvalDelta: rate(0, 30) - rate(30, 60) };
+  }
+  // Mês atual com crescimento realista: faturamento +8% a +15% e aprovação estável ou em leve alta.
+  const fits = (m: ReturnType<typeof metrics>) => m.growth >= 0.08 && m.growth <= 0.15 && m.approvalDelta >= 0 && m.approvalDelta <= 0.05;
+  const distance = (m: ReturnType<typeof metrics>) =>
+    Math.max(0, 0.08 - m.growth, m.growth - 0.15) + Math.max(0, -m.approvalDelta, m.approvalDelta - 0.05);
+
+  let chosen = { seed: 1, sim: simulate(1), m: { growth: 0, approvalDelta: 0 } };
+  chosen.m = metrics(chosen.sim);
+  for (let seed = 2; seed <= 400 && !fits(chosen.m); seed++) {
+    const sim = simulate(seed);
+    const m = metrics(sim);
+    if (fits(m) || distance(m) < distance(chosen.m)) chosen = { seed, sim, m };
+  }
+  // No começo do mês (1º ou 2º dia) pode não haver entregas suficientes: fica a semente mais próxima.
+  console.log(
+    `Semente ${chosen.seed}: faturamento ${(chosen.m.growth * 100).toFixed(1)}% vs. mesmo período do mês anterior, ` +
+      `aprovação ${(chosen.m.approvalDelta * 100).toFixed(1)} p.p.${fits(chosen.m) ? "" : " (mais próxima da faixa desejada)"}`,
+  );
+  const { appointments, quotes, workOrders } = chosen.sim;
+
+  await db.appointment.createMany({ data: appointments });
   const createdQuotes = await db.quote.createManyAndReturn({
     data: quotes.map(({ items, discountCents, ...q }) => {
       const t = quoteTotals(items, discountCents);
@@ -484,40 +559,7 @@ async function main() {
       })),
     ),
   });
-
-  // ---------- Ordens de serviço: uma por orçamento aprovado ----------
-
-  const approved = createdQuotes
-    .map(({ id }, i) => ({ id, ...quotes[i] }))
-    .filter((q) => q.status === "APPROVED")
-    .sort((a, b) => a.decidedAt!.getTime() - b.decidedAt!.getTime());
-
-  // Os aprovados mais recentes ainda estão na oficina, distribuídos pelas etapas.
-  const inShop: WorkOrderStatus[] = ["WAITING", "IN_PROGRESS", "IN_PROGRESS", "IN_PROGRESS", "READY", "READY"];
-  const workOrders = approved.map((q, i) => {
-    const fromEnd = approved.length - 1 - i;
-    const status: WorkOrderStatus = fromEnd < inShop.length ? inShop[fromEnd] : "DELIVERED";
-    const mainService = services.find((s) => s.id === q.items[0].serviceId)!;
-    const pro = professionals.find((p) => p.specialty === specialtyFor[mainService.category])!;
-
-    const startDay = nextOpenDay(addDays(spDay(q.decidedAt!), chance(0.6) ? 0 : 1));
-    const startedAt = minDate(at(startDay, 8 * 60 + int(0, 4) * 30), now);
-    const readyDay = nextOpenDay(addDays(startDay, mainService.durationMinutes > 240 ? 1 : 0));
-    const readyAt = minDate(at(readyDay, 16 * 60 + int(0, 3) * 30), now);
-    const deliveredAt = minDate(at(nextOpenDay(addDays(readyDay, chance(0.7) ? 0 : 1)), 17 * 60 + int(0, 2) * 30), now);
-
-    return {
-      quoteId: q.id,
-      vehicleId: q.vehicleId,
-      professionalId: pro.id,
-      status,
-      createdAt: q.decidedAt!,
-      startedAt: status === "WAITING" ? null : startedAt,
-      readyAt: status === "READY" || status === "DELIVERED" ? readyAt : null,
-      deliveredAt: status === "DELIVERED" ? deliveredAt : null,
-    };
-  });
-  await db.workOrder.createMany({ data: workOrders });
+  await db.workOrder.createMany({ data: workOrders.map(({ quoteIndex, ...w }) => ({ ...w, quoteId: createdQuotes[quoteIndex].id })) });
 
   // ---------- Conferência mínima pedida no escopo ----------
   const counts = {

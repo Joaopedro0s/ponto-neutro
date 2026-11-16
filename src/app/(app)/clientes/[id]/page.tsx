@@ -114,7 +114,7 @@ export default async function CustomerPage({ params }: PageProps<"/clientes/[id]
                         ? `${v._count.appointments} atendimento${v._count.appointments === 1 ? "" : "s"} · último em ${formatDate(v.appointments[0].startsAt)}`
                         : "Sem atendimentos ainda"}
                     </span>
-                    <span className="mt-2 text-sm font-medium text-primary">Ver histórico</span>
+                    <span className="mt-2 text-sm font-medium underline underline-offset-4">Ver histórico</span>
                   </Link>
                 </li>
               ))}

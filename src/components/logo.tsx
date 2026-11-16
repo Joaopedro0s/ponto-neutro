@@ -7,9 +7,9 @@ import { company } from "@/lib/company";
  * As mesmas formas estão em src/app/icon.svg, src/app/apple-icon.tsx e src/lib/quote-pdf.tsx.
  */
 export const LOGO = {
-  tile: "#1c1f23",
-  line: "#f2f3f5",
-  neutral: "#ff6a1a",
+  tile: "#151515",
+  line: "#ffffff",
+  neutral: "#ff422a",
   // H de três vias: 1ª/2ª, 3ª/4ª e 5ª/ré, ligadas pela travessa do neutro.
   path: "M9.5 8v16M16 8v16M22.5 8v16M9.5 16h13",
 } as const;

@@ -121,7 +121,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/ordens/[id]"
               {steps.map((s) => (
                 <li key={s.label} className="relative text-sm">
                   <span
-                    className={cn("absolute top-1.5 -left-[21px] size-2.5 rounded-full border-2 border-background", s.at ? "bg-primary" : "bg-muted-foreground/30")}
+                    className={cn("absolute top-1.5 -left-[21px] size-2.5 rounded-full border-2 border-background", s.at ? "bg-foreground" : "bg-muted-foreground/30")}
                     aria-hidden="true"
                   />
                   <p className={cn(!s.at && "text-muted-foreground")}>{s.label}</p>

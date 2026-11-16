@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, CalendarPlus, FilePlus, FileText, Pencil } from "lucide-react";
+import { CalendarPlus, FilePlus, Pencil } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -109,7 +109,6 @@ export default async function VehicleHistoryPage({ params }: PageProps<"/veiculo
             {timeline.map((item) =>
               item.kind === "appointment" ? (
                 <li key={`a-${item.a.id}`} className="flex gap-3 p-4">
-                  <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                   <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0">
                       <p className="font-medium">{item.a.service.name}</p>
@@ -122,7 +121,6 @@ export default async function VehicleHistoryPage({ params }: PageProps<"/veiculo
                 </li>
               ) : (
                 <li key={`q-${item.q.id}`} className="flex gap-3 p-4">
-                  <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                   <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0">
                       <p className="font-medium">
