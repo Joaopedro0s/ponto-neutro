@@ -3,67 +3,94 @@ import { db } from "@/lib/db";
 import { addDays, atSp, monthToDateRanges, spDay, weekday } from "@/lib/schedule";
 
 const sumTotals = (rows: { quote: { total: { toString(): string } } }[]) => rows.reduce((s, r) => s + Number(r.quote.total), 0);
+const DAY = 86_400_000;
+
+/** Variação relativa; null quando não há base de comparação. */
+export const delta = (current: number, previous: number) => (previous > 0 ? (current - previous) / previous : null);
 
 /**
  * Números do painel. Faturamento = total dos orçamentos cujas OS foram entregues no período
- * (o dinheiro entra na retirada do veículo).
+ * (o dinheiro entra na retirada do veículo). Comparações usam sempre o período anterior equivalente.
  */
 export async function loadDashboard(now = new Date()) {
   const { current, previous } = monthToDateRanges(now);
   const today = spDay(now);
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000);
-  const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000);
-  // Gráfico: 12 semanas completas + a atual, começando na segunda-feira.
+  const ago = (days: number) => new Date(now.getTime() - days * DAY);
+  // Séries semanais: 12 semanas completas + a atual, começando na segunda-feira.
   const thisMonday = addDays(today, -((weekday(today) + 6) % 7));
   const firstMonday = addDays(thisMonday, -12 * 7);
+  const seriesStart = atSp(firstMonday, "00:00");
 
-  const [monthRows, prevRows, decided, weekRows, topItems, todayAppointments, inShop] = await Promise.all([
-    db.workOrder.findMany({ where: { deliveredAt: { gte: current.from, lt: current.to } }, select: { quote: { select: { total: true } } } }),
-    db.workOrder.findMany({ where: { deliveredAt: { gte: previous.from, lt: previous.to } }, select: { quote: { select: { total: true } } } }),
-    db.quote.groupBy({ by: ["status"], where: { decidedAt: { gte: thirtyDaysAgo }, status: { in: ["APPROVED", "REJECTED"] } }, _count: true }),
-    db.workOrder.findMany({
-      where: { deliveredAt: { gte: atSp(firstMonday, "00:00") } },
-      select: { deliveredAt: true, quote: { select: { total: true } } },
-    }),
-    db.quoteItem.groupBy({
-      by: ["serviceId"],
-      where: { serviceId: { not: null }, quote: { status: "APPROVED", decidedAt: { gte: ninetyDaysAgo } } },
-      _count: true,
-      orderBy: { _count: { serviceId: "desc" } },
-      take: 6,
-    }),
-    db.appointment.findMany({
-      where: { startsAt: { gte: atSp(today, "00:00"), lt: atSp(addDays(today, 1), "00:00") }, status: { not: "CANCELED" } },
-      orderBy: { startsAt: "asc" },
-      include: { service: { select: { name: true } }, vehicle: { select: { plate: true } }, professional: { select: { name: true } } },
-    }),
-    db.workOrder.findMany({
-      where: { status: { not: "DELIVERED" } },
-      orderBy: { createdAt: "asc" },
-      include: { vehicle: { select: { plate: true, model: true } }, quote: { select: { customer: { select: { name: true } } } } },
-    }),
-  ]);
+  const [monthRows, prevRows, decided30, decidedPrev30, approvedMonth, approvedPrev, weekRows, approvedWeekRows, byStatus, topItems, todayAppointments, lastDays, inShop] =
+    await Promise.all([
+      db.workOrder.findMany({ where: { deliveredAt: { gte: current.from, lt: current.to } }, select: { quote: { select: { total: true } } } }),
+      db.workOrder.findMany({ where: { deliveredAt: { gte: previous.from, lt: previous.to } }, select: { quote: { select: { total: true } } } }),
+      db.quote.groupBy({ by: ["status"], where: { decidedAt: { gte: ago(30) }, status: { in: ["APPROVED", "REJECTED"] } }, _count: true }),
+      db.quote.groupBy({ by: ["status"], where: { decidedAt: { gte: ago(60), lt: ago(30) }, status: { in: ["APPROVED", "REJECTED"] } }, _count: true }),
+      db.quote.count({ where: { status: "APPROVED", decidedAt: { gte: current.from, lt: current.to } } }),
+      db.quote.count({ where: { status: "APPROVED", decidedAt: { gte: previous.from, lt: previous.to } } }),
+      db.workOrder.findMany({ where: { deliveredAt: { gte: seriesStart } }, select: { deliveredAt: true, quote: { select: { total: true } } } }),
+      db.quote.findMany({ where: { status: "APPROVED", decidedAt: { gte: seriesStart } }, select: { decidedAt: true } }),
+      db.quote.groupBy({ by: ["status"], where: { createdAt: { gte: ago(90) } }, _count: true }),
+      db.quoteItem.groupBy({
+        by: ["serviceId"],
+        where: { serviceId: { not: null }, quote: { status: "APPROVED", decidedAt: { gte: ago(90) } } },
+        _count: true,
+        orderBy: { _count: { serviceId: "desc" } },
+        take: 6,
+      }),
+      db.appointment.findMany({
+        where: { startsAt: { gte: atSp(today, "00:00"), lt: atSp(addDays(today, 1), "00:00") }, status: { not: "CANCELED" } },
+        orderBy: { startsAt: "asc" },
+        include: { service: { select: { name: true } }, vehicle: { select: { plate: true } }, professional: { select: { id: true, name: true } } },
+      }),
+      db.appointment.findMany({
+        where: { startsAt: { gte: atSp(addDays(today, -13), "00:00"), lt: atSp(addDays(today, 1), "00:00") }, status: { not: "CANCELED" } },
+        select: { startsAt: true },
+      }),
+      db.workOrder.findMany({
+        where: { status: { not: "DELIVERED" } },
+        orderBy: { createdAt: "asc" },
+        include: {
+          vehicle: { select: { plate: true, model: true } },
+          professional: { select: { name: true } },
+          quote: { select: { customer: { select: { name: true } }, items: { where: { kind: "LABOR" }, orderBy: { position: "asc" }, take: 1, select: { description: true } } } },
+        },
+      }),
+    ]);
 
   const services = await db.service.findMany({ where: { id: { in: topItems.map((t) => t.serviceId!) } }, select: { id: true, name: true } });
-  const approved = decided.find((d) => d.status === "APPROVED")?._count ?? 0;
-  const rejected = decided.find((d) => d.status === "REJECTED")?._count ?? 0;
+  const countOf = (rows: { status: string; _count: number }[], s: string) => rows.find((r) => r.status === s)?._count ?? 0;
+  const rate = (rows: { status: string; _count: number }[]) => {
+    const a = countOf(rows, "APPROVED");
+    const total = a + countOf(rows, "REJECTED");
+    return { approved: a, decided: total, value: total ? a / total : null };
+  };
 
+  // Agrupa datas em semanas a partir da primeira segunda-feira.
+  const weekIndex = (d: Date) => Math.floor((atSp(spDay(d), "12:00").getTime() - atSp(firstMonday, "12:00").getTime()) / (7 * DAY));
   const weeks = Array.from({ length: 13 }, (_, i) => {
     const start = addDays(firstMonday, i * 7);
-    return { start, label: `${start.slice(8, 10)}/${start.slice(5, 7)}`, total: 0 };
+    return { start, label: `${start.slice(8, 10)}/${start.slice(5, 7)}`, total: 0, approvals: 0, partial: start === thisMonday };
   });
-  for (const r of weekRows) {
-    const index = Math.floor((atSp(spDay(r.deliveredAt!), "12:00").getTime() - atSp(firstMonday, "12:00").getTime()) / (7 * 86_400_000));
-    if (weeks[index]) weeks[index].total += Number(r.quote.total);
-  }
+  for (const r of weekRows) if (weeks[weekIndex(r.deliveredAt!)]) weeks[weekIndex(r.deliveredAt!)].total += Number(r.quote.total);
+  for (const r of approvedWeekRows) if (weeks[weekIndex(r.decidedAt!)]) weeks[weekIndex(r.decidedAt!)].approvals += 1;
+
+  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13));
+  const perDay = days.map((d) => ({ day: d, count: lastDays.filter((a) => spDay(a.startsAt) === d).length }));
+  const sameDayLastWeek = perDay[perDay.length - 8].count;
 
   return {
+    today,
     revenue: { current: sumTotals(monthRows), previous: sumTotals(prevRows) },
-    approval: { approved, decided: approved + rejected },
-    weeks: weeks.map((w) => ({ ...w, total: Math.round(w.total * 100) / 100, partial: w.start === thisMonday })),
+    approvedQuotes: { current: approvedMonth, previous: approvedPrev },
+    approval: { current: rate(decided30), previous: rate(decidedPrev30) },
+    appointmentsToday: { current: todayAppointments.length, previous: sameDayLastWeek },
+    weeks: weeks.map((w) => ({ ...w, total: Math.round(w.total * 100) / 100 })),
+    perDay,
+    quotesByStatus: { DRAFT: countOf(byStatus, "DRAFT"), SENT: countOf(byStatus, "SENT"), APPROVED: countOf(byStatus, "APPROVED"), REJECTED: countOf(byStatus, "REJECTED") },
     topServices: topItems.map((t) => ({ name: services.find((s) => s.id === t.serviceId)?.name ?? "—", count: t._count })),
     todayAppointments,
     inShop,
-    today,
   };
 }

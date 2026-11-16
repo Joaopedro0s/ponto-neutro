@@ -30,7 +30,7 @@ export default async function ServicesPage() {
           if (!list.length) return null;
           return (
             <section key={cat} aria-labelledby={`cat-${cat}`}>
-              <h2 id={`cat-${cat}`} className="mb-3 font-medium">
+              <h2 id={`cat-${cat}`} className="eyebrow mb-3">
                 {serviceCategoryLabel[cat]}
               </h2>
               <ul className="divide-y rounded-xl border bg-card">

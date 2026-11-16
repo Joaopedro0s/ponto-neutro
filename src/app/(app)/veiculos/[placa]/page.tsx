@@ -92,14 +92,14 @@ export default async function VehicleHistoryPage({ params }: PageProps<"/veiculo
       <dl className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border bg-card p-3 last:col-span-2 sm:p-4 sm:last:col-span-1">
-            <dt className="text-sm text-muted-foreground">{s.label}</dt>
-            <dd className="mt-1 text-xl font-semibold tabular-nums">{s.value}</dd>
+            <dt className="eyebrow">{s.label}</dt>
+            <dd className="mt-1 font-display text-3xl font-semibold tabular-nums">{s.value}</dd>
           </div>
         ))}
       </dl>
 
       <section aria-labelledby="historico">
-        <h2 id="historico" className="mb-3 font-medium">
+        <h2 id="historico" className="eyebrow mb-3">
           Histórico de serviços
         </h2>
         {timeline.length === 0 ? (

@@ -15,10 +15,10 @@ export function LoginForm() {
   return (
     <div className="flex flex-col gap-6">
       <form action={demoAction}>
-        <Button type="submit" size="lg" className="h-11 w-full text-sm" disabled={busy}>
+        <Button type="submit" size="lg" className="h-12 w-full text-base sm:h-12" disabled={busy}>
           {demoPending ? "Entrando…" : "Entrar como demonstração"}
         </Button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
+        <p className="mt-2 text-center text-sm text-muted-foreground">
           Acesso imediato com dados fictícios, sem cadastro.
         </p>
       </form>
@@ -37,13 +37,12 @@ export function LoginForm() {
             name="email"
             type="email"
             autoComplete="email"
-            className="h-10"
             defaultValue={state.email}
             aria-invalid={!!state.fieldErrors?.email}
             aria-describedby={state.fieldErrors?.email ? "email-erro" : undefined}
           />
           {state.fieldErrors?.email && (
-            <p id="email-erro" className="text-sm text-destructive">
+            <p id="email-erro" className="text-sm text-danger-fg">
               {state.fieldErrors.email}
             </p>
           )}
@@ -55,24 +54,23 @@ export function LoginForm() {
             name="password"
             type="password"
             autoComplete="current-password"
-            className="h-10"
             aria-invalid={!!state.fieldErrors?.password}
             aria-describedby={state.fieldErrors?.password ? "senha-erro" : undefined}
           />
           {state.fieldErrors?.password && (
-            <p id="senha-erro" className="text-sm text-destructive">
+            <p id="senha-erro" className="text-sm text-danger-fg">
               {state.fieldErrors.password}
             </p>
           )}
         </div>
 
         {error && (
-          <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p role="alert" className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2.5 text-sm text-danger-fg">
             {error}
           </p>
         )}
 
-        <Button type="submit" variant="outline" size="lg" className="h-10" disabled={busy}>
+        <Button type="submit" variant="outline" size="lg" disabled={busy}>
           {pending ? "Entrando…" : "Entrar"}
         </Button>
       </form>

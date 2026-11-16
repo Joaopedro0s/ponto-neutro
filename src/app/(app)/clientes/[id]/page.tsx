@@ -50,7 +50,7 @@ export default async function CustomerPage({ params }: PageProps<"/clientes/[id]
 
       <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
         <section aria-labelledby="contato" className="h-fit rounded-xl border bg-card p-5">
-          <h2 id="contato" className="mb-3 font-medium">
+          <h2 id="contato" className="eyebrow mb-3">
             Contato
           </h2>
           <ul className="flex flex-col gap-2 text-sm">
@@ -90,7 +90,7 @@ export default async function CustomerPage({ params }: PageProps<"/clientes/[id]
         </section>
 
         <section aria-labelledby="veiculos" className="flex flex-col gap-4">
-          <h2 id="veiculos" className="font-medium">
+          <h2 id="veiculos" className="eyebrow">
             Veículos
           </h2>
           {customer.vehicles.length === 0 ? (
@@ -122,7 +122,7 @@ export default async function CustomerPage({ params }: PageProps<"/clientes/[id]
           )}
 
           <div className="rounded-xl border p-5">
-            <h3 className="mb-4 font-medium">Cadastrar veículo</h3>
+            <h3 className="eyebrow mb-4">Cadastrar veículo</h3>
             <VehicleForm action={createVehicle.bind(null, id)} submitLabel="Adicionar veículo" />
           </div>
         </section>

@@ -1,45 +1,34 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
-import { AppNav } from "@/components/app-nav";
+import { BottomNav, Sidebar } from "@/components/app-nav";
+import { DemoNotice } from "@/components/demo-notice";
 import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { logout } from "../login/actions";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
 
   return (
-    <>
+    <div className="flex min-h-dvh">
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background focus:px-3 focus:py-2"
+        className="sr-only z-[60] rounded-lg bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Pular para o conteúdo
       </a>
-      <header className="border-b bg-background">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-              <Logo />
-            </Link>
-            <AppNav className="hidden lg:block" />
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:inline">{user.name}</span>
-            <form action={logout}>
-              <Button type="submit" variant="ghost" size="sm">
-                <LogOut aria-hidden="true" />
-                Sair
-              </Button>
-            </form>
-          </div>
-        </div>
-        <AppNav className="overflow-x-auto border-t px-3 py-1.5 lg:hidden" />
-      </header>
-      <main id="conteudo" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:py-8">
-        {children}
-      </main>
-    </>
+      <Sidebar userName={user.name} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Celular: só a marca no topo; a navegação fica embaixo, ao alcance do polegar. */}
+        <header className="flex h-14 items-center border-b bg-surface px-4 lg:hidden">
+          <Link href="/" aria-label="Ponto Neutro, ir para o painel">
+            <Logo />
+          </Link>
+        </header>
+        <main id="conteudo" className="mx-auto w-full max-w-[1440px] flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-6">
+          {children}
+          <DemoNotice />
+        </main>
+      </div>
+      <BottomNav userName={user.name} />
+    </div>
   );
 }

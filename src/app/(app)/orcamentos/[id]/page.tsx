@@ -7,6 +7,7 @@ import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Table, tdClass, thClass, trClass } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth";
 import { company } from "@/lib/company";
 import { db } from "@/lib/db";
@@ -115,7 +116,7 @@ export default async function QuotePage({ params }: PageProps<"/orcamentos/[id]"
       )}
 
       <section aria-labelledby="itens" className="mb-6">
-        <h2 id="itens" className="mb-3 font-medium">
+        <h2 id="itens" className="eyebrow mb-3">
           Itens
         </h2>
         {/* Celular: lista; telas maiores: tabela. */}
@@ -132,29 +133,30 @@ export default async function QuotePage({ params }: PageProps<"/orcamentos/[id]"
             </li>
           ))}
         </ul>
-        <div className="hidden overflow-hidden rounded-xl border bg-card sm:block">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
+        <div className="hidden sm:block">
+          <Table>
+            <caption className="sr-only">Itens do orçamento</caption>
+            <thead>
               <tr>
-                <th scope="col" className="px-4 py-2 font-medium">Tipo</th>
-                <th scope="col" className="px-4 py-2 font-medium">Descrição</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Qtd.</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Valor unit.</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Total</th>
+                <th scope="col" className={thClass}>Tipo</th>
+                <th scope="col" className={thClass}>Descrição</th>
+                <th scope="col" className={`${thClass} text-right`}>Qtd.</th>
+                <th scope="col" className={`${thClass} text-right`}>Valor unit.</th>
+                <th scope="col" className={`${thClass} text-right`}>Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {q.items.map((i) => (
-                <tr key={i.id}>
-                  <td className="px-4 py-2.5 text-muted-foreground">{quoteItemKindLabel[i.kind]}</td>
-                  <td className="px-4 py-2.5">{i.description}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{qty(i.quantity)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{formatBRL(i.unitPrice)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium tabular-nums">{formatBRL(Number(i.quantity) * Number(i.unitPrice))}</td>
+                <tr key={i.id} className={trClass}>
+                  <td className={`${tdClass} text-muted-foreground`}>{quoteItemKindLabel[i.kind]}</td>
+                  <td className={tdClass}>{i.description}</td>
+                  <td className={`${tdClass} text-right tabular-nums`}>{qty(i.quantity)}</td>
+                  <td className={`${tdClass} text-right tabular-nums`}>{formatBRL(i.unitPrice)}</td>
+                  <td className={`${tdClass} text-right font-medium tabular-nums`}>{formatBRL(Number(i.quantity) * Number(i.unitPrice))}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       </section>
 
@@ -162,7 +164,7 @@ export default async function QuotePage({ params }: PageProps<"/orcamentos/[id]"
         <div className="flex flex-col gap-3 text-sm">
           {q.notes && (
             <div>
-              <h2 className="mb-1 font-medium">Observações para o cliente</h2>
+              <h2 className="eyebrow mb-1">Observações para o cliente</h2>
               <p className="whitespace-pre-line text-muted-foreground">{q.notes}</p>
             </div>
           )}
@@ -183,16 +185,16 @@ export default async function QuotePage({ params }: PageProps<"/orcamentos/[id]"
               <dd className="tabular-nums">− {formatBRL(discount)}</dd>
             </div>
           )}
-          <div className="mt-1 flex justify-between border-t pt-3 text-base font-semibold">
-            <dt>Total</dt>
-            <dd className="tabular-nums">{formatBRL(q.total)}</dd>
+          <div className="mt-1 flex items-baseline justify-between border-t pt-3">
+            <dt className="eyebrow">Total</dt>
+            <dd className="font-display text-3xl font-semibold text-primary tabular-nums">{formatBRL(q.total)}</dd>
           </div>
         </dl>
       </div>
 
       {q.status === "DRAFT" && (
         <section aria-labelledby="excluir" className="mt-10 max-w-xl border-t pt-6">
-          <h2 id="excluir" className="font-medium">
+          <h2 id="excluir" className="eyebrow">
             Excluir rascunho
           </h2>
           <p className="mt-1 mb-3 text-sm text-muted-foreground">Só rascunhos podem ser excluídos. Orçamentos enviados ficam no histórico.</p>

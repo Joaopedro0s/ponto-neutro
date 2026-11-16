@@ -24,7 +24,7 @@ export default async function EditVehiclePage({ params }: PageProps<"/veiculos/[
       </div>
 
       <section aria-labelledby="excluir" className="mt-10 max-w-xl border-t pt-6">
-        <h2 id="excluir" className="font-medium">
+        <h2 id="excluir" className="eyebrow">
           Excluir veículo
         </h2>
         <p className="mt-1 mb-3 text-sm text-muted-foreground">

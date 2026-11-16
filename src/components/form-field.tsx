@@ -1,4 +1,4 @@
-import { Input } from "@/components/ui/input";
+import { fieldClass, Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ function Wrapper({ label, name, error, hint, required, className, children }: Co
         </p>
       )}
       {error && (
-        <p id={`${name}-erro`} className="text-sm text-destructive">
+        <p id={`${name}-erro`} className="text-sm text-danger-fg">
           {error}
         </p>
       )}
@@ -39,7 +39,7 @@ export function TextField({ label, name, error, hint, required, className, ...in
   const common = { label, name, error, hint, required, className };
   return (
     <Wrapper {...common}>
-      <Input {...input} {...a11y(common)} className="h-10" />
+      <Input {...input} {...a11y(common)} />
     </Wrapper>
   );
 }
@@ -61,7 +61,7 @@ export function SelectField({ label, name, error, hint, required, className, chi
       <select
         {...select}
         {...a11y(common)}
-        className="h-10 w-full min-w-0 rounded-lg border border-input bg-background px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm"
+        className={cn(fieldClass, "h-11 sm:h-10")}
       >
         {children}
       </select>
@@ -72,7 +72,7 @@ export function SelectField({ label, name, error, hint, required, className, chi
 export function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+    <p role="alert" className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2.5 text-sm text-danger-fg">
       {message}
     </p>
   );

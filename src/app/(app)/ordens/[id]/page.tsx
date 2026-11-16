@@ -83,7 +83,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/ordens/[id]"
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <section aria-labelledby="servicos" className="flex flex-col gap-3">
-          <h2 id="servicos" className="font-medium">
+          <h2 id="servicos" className="eyebrow">
             Serviços e peças
           </h2>
           <ul className="divide-y rounded-xl border bg-card">
@@ -114,7 +114,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/ordens/[id]"
             professionals={professionals.map((p) => ({ id: p.id, label: `${p.name} · ${specialtyLabel[p.specialty]}` }))}
           />
           <section aria-labelledby="etapas">
-            <h2 id="etapas" className="mb-3 font-medium">
+            <h2 id="etapas" className="eyebrow mb-3">
               Etapas
             </h2>
             <ol className="flex flex-col gap-3 border-l pl-4">

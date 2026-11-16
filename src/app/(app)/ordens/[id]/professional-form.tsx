@@ -26,7 +26,7 @@ export function ProfessionalForm({
             </option>
           ))}
         </SelectField>
-        <Button type="submit" variant="outline" size="lg" className="h-10" disabled={pending}>
+        <Button type="submit" variant="outline" size="lg" disabled={pending}>
           {pending ? "Salvando…" : "Salvar"}
         </Button>
       </div>

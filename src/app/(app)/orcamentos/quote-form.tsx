@@ -6,7 +6,7 @@ import { Plus, X } from "lucide-react";
 import { CustomerVehicleFields, type CustomerOption } from "@/components/customer-vehicle-fields";
 import { FormError, TextAreaField, TextField } from "@/components/form-field";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { fieldClass, Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { centsToInput, formatBRL, parseMoney } from "@/lib/format";
 import type { FormState } from "@/lib/form";
@@ -42,7 +42,6 @@ const quantityOf = (s: string) => {
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 const newKey = () => Math.random().toString(36).slice(2);
-const inputClass = "h-10";
 
 export function QuoteForm({
   action,
@@ -84,7 +83,7 @@ export function QuoteForm({
       </div>
 
       <section aria-labelledby="itens" className="flex flex-col gap-3">
-        <h2 id="itens" className="font-medium">
+        <h2 id="itens" className="eyebrow">
           Itens
         </h2>
         <input type="hidden" name="items" value={JSON.stringify(rows)} />
@@ -120,7 +119,7 @@ export function QuoteForm({
                       id={id("kind")}
                       value={r.kind}
                       onChange={(ev) => update(r.key, { kind: ev.target.value as ItemRow["kind"] })}
-                      className="h-10 w-full rounded-lg border border-input bg-background px-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                      className={cn(fieldClass, "h-11 sm:h-10")}
                     >
                       {Object.entries(quoteItemKindLabel).map(([value, label]) => (
                         <option key={value} value={value}>
@@ -138,7 +137,7 @@ export function QuoteForm({
                       value={r.description}
                       onChange={(ev) => update(r.key, { description: ev.target.value })}
                       aria-invalid={!!error || undefined}
-                      className={inputClass}
+                      
                     />
                   </div>
                   <div>
@@ -150,7 +149,7 @@ export function QuoteForm({
                       inputMode="decimal"
                       value={r.quantity}
                       onChange={(ev) => update(r.key, { quantity: ev.target.value })}
-                      className={cn(inputClass, "tabular-nums")}
+                      className="tabular-nums"
                     />
                   </div>
                   <div>
@@ -166,7 +165,7 @@ export function QuoteForm({
                         const cents = parseMoney(r.unitPrice);
                         if (cents !== null) update(r.key, { unitPrice: centsToInput(cents) });
                       }}
-                      className={cn(inputClass, "tabular-nums")}
+                      className="tabular-nums"
                     />
                   </div>
                   <div className="flex items-end justify-end self-end pb-2.5 text-sm font-medium tabular-nums sm:self-center sm:pb-0">
@@ -179,12 +178,12 @@ export function QuoteForm({
                     </Button>
                   </div>
                 </div>
-                {error && <p className="mt-1 text-sm text-destructive">Item {n}: {error}</p>}
+                {error && <p className="mt-1 text-sm text-danger-fg">Item {n}: {error}</p>}
               </li>
             );
           })}
         </ol>
-        {e.items && <p className="text-sm text-destructive">{e.items}</p>}
+        {e.items && <p className="text-sm text-danger-fg">{e.items}</p>}
 
         <div className="flex flex-wrap items-end gap-2">
           <div className="flex flex-col gap-1.5">
@@ -196,7 +195,7 @@ export function QuoteForm({
                 const s = options.services.find((x) => x.id === ev.target.value);
                 if (s) setRows((rs) => [...rs, { key: newKey(), kind: "LABOR", description: s.name, quantity: "1", unitPrice: centsToInput(s.priceCents), serviceId: s.id }]);
               }}
-              className="h-10 w-full max-w-xs rounded-lg border border-input bg-background px-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              className={cn(fieldClass, "h-11 max-w-xs sm:h-10")}
             >
               <option value="">Escolha um serviço…</option>
               {options.services.map((s) => (
@@ -210,7 +209,6 @@ export function QuoteForm({
             type="button"
             variant="outline"
             size="lg"
-            className="h-10"
             onClick={() => setRows((rs) => [...rs, { key: newKey(), kind: "PART", description: "", quantity: "1", unitPrice: "", serviceId: null }])}
           >
             <Plus aria-hidden="true" />
@@ -245,12 +243,12 @@ export function QuoteForm({
                 onChange={(ev) => setDiscount(ev.target.value)}
                 aria-invalid={!!e.discount || undefined}
                 aria-describedby={e.discount ? "discount-erro" : undefined}
-                className="h-9 w-28 text-right tabular-nums"
+                className="w-32 text-right tabular-nums"
               />
             </dd>
           </div>
           {e.discount && (
-            <p id="discount-erro" className="text-right text-sm text-destructive">
+            <p id="discount-erro" className="text-right text-sm text-danger-fg">
               {e.discount}
             </p>
           )}

@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, tdClass, thClass, trClass } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatBRL, formatDate } from "@/lib/format";
@@ -68,32 +69,35 @@ export default async function QuotesPage({ searchParams }: PageProps<"/orcamento
         </Link>
       </PageHeader>
 
-      <form role="search" className="mb-4 flex max-w-xl gap-2">
+      <form role="search" className="mb-5 flex max-w-2xl gap-2">
         <Label htmlFor="q" className="sr-only">
           Buscar por cliente, placa ou número
         </Label>
-        <Input id="q" name="q" type="search" defaultValue={q} placeholder="Cliente, placa ou número" className="h-10" />
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input id="q" name="q" type="search" defaultValue={q} placeholder="Cliente, placa ou número" autoComplete="off" spellCheck={false} className="pl-9 sm:h-11" />
+        </div>
         {status && <input type="hidden" name="situacao" value={status} />}
-        <Button type="submit" variant="outline" size="lg" className="h-10">
-          <Search aria-hidden="true" />
+        <Button type="submit" size="lg" className="sm:h-11">
           Buscar
         </Button>
       </form>
 
-      <nav aria-label="Filtrar por situação" className="mb-4 overflow-x-auto">
-        <ul className="flex gap-1">
+      {/* Abas de situação: rolam na própria faixa no celular */}
+      <nav aria-label="Filtrar por situação" className="-mx-4 mb-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <ul className="flex w-max gap-1 rounded-lg border bg-surface p-1">
           {[undefined, ...STATUSES].map((s) => (
             <li key={s ?? "todos"}>
               <Link
                 href={href(s)}
                 aria-current={status === s ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm whitespace-nowrap text-muted-foreground hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                  status === s && "bg-muted font-medium text-foreground",
+                  "inline-flex min-h-10 items-center gap-2 rounded-md px-3.5 text-sm whitespace-nowrap text-muted-foreground transition-colors duration-150 hover:text-foreground sm:min-h-8",
+                  status === s && "bg-surface-2 font-medium text-foreground",
                 )}
               >
                 {s ? quoteStatus[s].label : "Todos"}
-                <span className="tabular-nums text-xs text-foreground/70">{countOf(s)}</span>
+                <span className="rounded-full bg-background/60 px-1.5 text-xs tabular-nums">{countOf(s)}</span>
               </Link>
             </li>
           ))}
@@ -105,33 +109,71 @@ export default async function QuotesPage({ searchParams }: PageProps<"/orcamento
           title={q || status ? "Nenhum orçamento encontrado" : "Nenhum orçamento ainda"}
           description={q || status ? "Tente outra busca ou outra situação." : "Crie o primeiro orçamento a partir do catálogo de serviços."}
         >
-          <Link href={q || status ? "/orcamentos" : "/orcamentos/novo"} className={buttonVariants({ variant: "outline" })}>
+          <Link href={q || status ? "/orcamentos" : "/orcamentos/novo"} className={buttonVariants({ variant: "outline", size: "lg" })}>
             {q || status ? "Limpar filtros" : "Novo orçamento"}
           </Link>
         </EmptyState>
       ) : (
-        <ul className="divide-y rounded-xl border bg-card">
-          {quotes.map((x) => (
-            <li key={x.id}>
-              <Link
-                href={`/orcamentos/${x.id}`}
-                className="flex flex-col gap-1 p-4 transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:flex-row sm:items-center sm:gap-4"
-              >
-                <span className="w-24 shrink-0 font-medium tabular-nums">{formatQuoteNumber(x.number)}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate">{x.customer.name}</span>
-                  <span className="block text-sm text-muted-foreground">
-                    <span className="font-mono">{x.vehicle.plate}</span> · {x.vehicle.model} · {formatDate(x.createdAt)}
+        <>
+          <div className="hidden md:block">
+            <Table>
+              <caption className="sr-only">Orçamentos</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className={thClass}>Número</th>
+                  <th scope="col" className={thClass}>Cliente</th>
+                  <th scope="col" className={thClass}>Veículo</th>
+                  <th scope="col" className={thClass}>Data</th>
+                  <th scope="col" className={thClass}>Situação</th>
+                  <th scope="col" className={`${thClass} text-right`}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quotes.map((x) => (
+                  <tr key={x.id} className={trClass}>
+                    <td className={tdClass}>
+                      <Link href={`/orcamentos/${x.id}`} className="font-mono font-medium text-primary underline-offset-4 hover:underline">
+                        {formatQuoteNumber(x.number)}
+                      </Link>
+                    </td>
+                    <td className={tdClass}>{x.customer.name}</td>
+                    <td className={tdClass}>
+                      <span className="plate">{x.vehicle.plate}</span>
+                      <span className="block text-xs text-muted-foreground">{x.vehicle.model}</span>
+                    </td>
+                    <td className={`${tdClass} text-muted-foreground tabular-nums`}>{formatDate(x.createdAt)}</td>
+                    <td className={tdClass}>
+                      <StatusBadge {...quoteStatus[x.status]} />
+                    </td>
+                    <td className={`${tdClass} text-right font-medium whitespace-nowrap tabular-nums`}>{formatBRL(x.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+
+          <ul className="flex flex-col gap-2 md:hidden">
+            {quotes.map((x) => (
+              <li key={x.id}>
+                <Link href={`/orcamentos/${x.id}`} className="block rounded-xl border bg-card p-4 transition-colors duration-150 hover:border-input">
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-sm font-medium text-primary">{formatQuoteNumber(x.number)}</span>
+                    <StatusBadge {...quoteStatus[x.status]} />
                   </span>
-                </span>
-                <span className="flex items-center justify-between gap-3 sm:justify-end">
-                  <StatusBadge {...quoteStatus[x.status]} />
-                  <span className="w-28 text-right font-medium tabular-nums">{formatBRL(x.total)}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  <span className="mt-2 flex items-end justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block truncate">{x.customer.name}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        <span className="plate">{x.vehicle.plate}</span> · {formatDate(x.createdAt)}
+                      </span>
+                    </span>
+                    <span className="font-display text-xl font-semibold tabular-nums">{formatBRL(x.total)}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </>
   );

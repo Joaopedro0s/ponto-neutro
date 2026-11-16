@@ -62,7 +62,7 @@ export default async function AppointmentPage({ params }: PageProps<"/agenda/[id
 
       {appointment.status !== "CANCELED" && (
         <section aria-labelledby="cancelar" className="mt-10 max-w-2xl border-t pt-6">
-          <h2 id="cancelar" className="font-medium">
+          <h2 id="cancelar" className="eyebrow">
             Cancelar agendamento
           </h2>
           <p className="mt-1 mb-3 text-sm text-muted-foreground">

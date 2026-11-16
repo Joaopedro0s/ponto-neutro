@@ -21,19 +21,31 @@ Na tela de entrada, clique em **Entrar como demonstração**. Não é preciso ca
 
 | Entrada | Painel |
 |---|---|
-| ![Tela de entrada](docs/screenshots/login.png) | ![Painel com faturamento, aprovação e veículos em serviço](docs/screenshots/dashboard.png) |
-| **Agenda da semana** | **Orçamento** |
-| ![Agenda semanal por profissional](docs/screenshots/agenda-semana.png) | ![Orçamento com itens, desconto e ações](docs/screenshots/orcamento.png) |
-| **PDF do orçamento** | **No celular** |
-| ![PDF do orçamento com a identidade da empresa](docs/screenshots/orcamento-pdf.png) | ![Agenda do dia no celular](docs/screenshots/agenda-dia-celular.png) |
+| ![Tela de entrada com velocímetro e botão de demonstração](docs/screenshots/login.png) | ![Painel com indicadores, faturamento e veículos em serviço](docs/screenshots/dashboard.png) |
+| **Agenda da semana** | **Clientes** |
+| ![Agenda em grade de horas, colorida por profissional](docs/screenshots/agenda-semana.png) | ![Tabela de clientes com placas e total gasto](docs/screenshots/clientes.png) |
+| **Orçamento** | **PDF do orçamento** |
+| ![Orçamento com itens e total](docs/screenshots/orcamento.png) | ![PDF do orçamento com a identidade da empresa](docs/screenshots/orcamento-pdf.png) |
 
-Outras capturas em [`docs/screenshots`](docs/screenshots): ordens de serviço, histórico por placa, clientes, catálogo e as versões para celular. Elas são geradas por `npm run qa -- --capturas` (veja [Qualidade](#qualidade)).
+**No celular (390px):**
+
+| Painel | Agenda do dia | Orçamentos |
+|---|---|---|
+| ![Painel no celular](docs/screenshots/dashboard-celular.png) | ![Agenda do dia no celular](docs/screenshots/agenda-dia-celular.png) | ![Lista de orçamentos no celular](docs/screenshots/orcamentos-celular.png) |
+
+**Antes e depois do redesenho:**
+
+| Antes | Depois |
+|---|---|
+| ![Agenda antes: cartões apertados](docs/screenshots/antes/agenda-semana.png) | ![Agenda depois: grade de horas](docs/screenshots/agenda-semana.png) |
+
+Todas as telas, em 1440px e 390px, estão em [`docs/screenshots`](docs/screenshots) (as versões anteriores ao redesenho ficam em [`docs/screenshots/antes`](docs/screenshots/antes)). Elas são geradas por `npm run qa -- --capturas` (veja [Qualidade](#qualidade)).
 
 ### Quadro de pendências
 
 | Item | Situação |
 |---|---|
-| Capturas: entrada, painel, agenda, orçamento, PDF e celular | ✅ Feitas (dados do seed) |
+| Capturas do redesenho: todas as telas em 1440px e 390px, PDF e antes/depois | ✅ Feitas (dados do seed) |
 | Publicar na Vercel e colocar o link da demonstração acima | ⏳ Pendente |
 | Trocar o selo "deploy pendente" pelo selo da Vercel | ⏳ Pendente |
 | Refazer as capturas a partir da versão publicada (o link do WhatsApp passa a mostrar o domínio real) | ⏳ Pendente |
@@ -97,7 +109,7 @@ Este sistema reúne essas pontas:
 |---|---|---|
 | **Next.js 16** (App Router) | Páginas e regras de negócio no mesmo projeto | As telas são montadas no servidor, já com os dados, e as ações dos formulários (*Server Actions*) rodam lá também, sem uma API separada para manter. |
 | **TypeScript** | Linguagem | Os tipos pegam erros antes de rodar, inclusive nos dados vindos do banco. |
-| **Tailwind CSS 4 + shadcn/ui** | Visual | Componentes acessíveis prontos, com o estilo ajustado à marca. |
+| **Tailwind CSS 4 + shadcn/ui** | Visual | Componentes acessíveis prontos, com tokens próprios (cores, fontes, raios e movimento) documentados em `docs/design-system.md`. |
 | **Prisma 7 + PostgreSQL** | Banco de dados | O Prisma gera consultas tipadas a partir do modelo. PostgreSQL roda em Neon ou Supabase, compatíveis com a Vercel. |
 | **Zod** | Validação | Todo formulário é validado no servidor, com mensagens em português. |
 | **@react-pdf/renderer** | PDF do orçamento | O PDF é desenhado com componentes React e gerado no servidor, sem precisar de um navegador. |
@@ -187,7 +199,7 @@ As datas do seed são relativas ao dia em que ele roda. Rodar `npm run db:seed` 
 npm test                    # contas do orçamento, datas, fuso, placas, telefones e senhas
 npm run lint                # padrões de código
 npm run typecheck           # tipos
-npm run qa                  # com o app rodando: acessibilidade (WCAG 2.1 AA) e rolagem lateral em 15 telas
+npm run qa                  # com o app rodando: acessibilidade (WCAG 2.1 AA) e rolagem lateral em 28 telas (1440px e 390px)
 npm run qa -- --capturas    # o mesmo, salvando as capturas em docs/screenshots
 ```
 
@@ -195,11 +207,15 @@ O `qa` usa o Edge instalado no computador. Para usar o Chrome, rode com `QA_BROW
 
 ## Decisões de design e aprendizados
 
-**Produto e interface**
-- **Identidade sem clichês**: a marca usa o "H" do câmbio manual com o ponto no neutro, verde-petróleo como cor principal e âmbar só em detalhes. O painel tem poucos números grandes e gráficos de uma cor só.
-- **Agenda em listas, não em grade de horas**: continua legível no celular, sem rolagem lateral.
-- **Pensado para o celular desde o início**: tabelas viram listas, os itens do orçamento viram cartões e o menu vira uma faixa rolável.
-- **Acessibilidade**: rótulo em todos os campos, foco visível, link "Pular para o conteúdo", contraste conferido e gráficos com os mesmos dados em tabela para leitores de tela. A auditoria automática passa sem apontamentos nas 15 telas verificadas.
+**Produto e interface** (detalhes em [`docs/design-system.md`](docs/design-system.md))
+- **Painel de instrumentos**: tema escuro grafite, superfícies em dois níveis e um único acento laranja-sinal, usado só em ação principal, item ativo, foco e dado importante. A profundidade vem do contraste entre superfícies, sem sombras.
+- **Tipografia de sinalização**: Barlow Condensed em títulos e números, Geist no corpo e JetBrains Mono em placas e códigos. O corpo nunca fica abaixo de 14px.
+- **Marca**: o "H" do câmbio com o ponto neutro em laranja, num quadro grafite que funciona no tema escuro, no PDF claro e a 16px no favicon.
+- **Cor por profissional**: cada um tem uma cor fixa em toda a interface. A ordem foi validada para daltonismo e, como nenhuma paleta separa 4 cores lado a lado para todos, cada bloco da agenda também mostra as iniciais.
+- **Agenda em grade de horas**: eixo de 08:00 a 18:00, blocos com altura proporcional à duração, faixas lado a lado quando há sobreposição, linha da hora atual, filtro por profissional e detalhes num diálogo. No celular, vira lista por horário.
+- **Navegação**: barra lateral fixa no desktop; no celular, barra inferior ao alcance do polegar, com o menu "Mais".
+- **Contraste medido, não estimado**: texto ≥ 4,5:1 e bordas de controles ≥ 3:1. Por isso o texto sobre o laranja é escuro (branco daria 2,9:1) e o vermelho dos selos usa um tom mais claro.
+- **Acessibilidade**: foco laranja visível em tudo, alvos de toque de 44px no celular, gráficos com os mesmos dados em tabela para leitores de tela e animações de 150 a 250ms que somem com "reduzir movimento". A auditoria automática passa sem apontamentos em 28 telas (14 em 1440px e 14 em 390px).
 - **Mensagens em português em todo lugar**, inclusive as de validação padrão.
 
 **Regras de negócio**
